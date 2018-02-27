@@ -1,0 +1,23 @@
+#!/bin/sh
+
+conversion_test() {
+    ../build/src/conversion-utility -o ${1} ${1%.xml}.sqlite3 && \
+    hash=`sqlite3 -bail ${1%.xml}.sqlite3 ".sha3sum"`
+    if [ -z ${hash} ]; then
+        echo "${1}: test failed (unsuccessful conversion)."
+        return 1
+    elif [ ${hash} = ${2} ]; then
+        echo "${1}: test passed."
+        rm ${1%.xml}.sqlite3
+        return 0
+    else
+        echo "${1}: test failed (hashes differ)."
+        echo $hash
+        return 1
+    fi
+}
+
+conversion_test award-14.xml '388e51ab7e4594b48d4d6dc49ea760578babc032fb6fc19ffac87bce'
+conversion_test award-15.xml '2150cbcf3d274612649ce3024edc8d165171ba1d607f77a321412586'
+conversion_test idv-14.xml '02e2ec39bddf7097cf2d1100a2488493fb7720805f683602eb2e28ac'
+conversion_test idv-15.xml '5dec71fb36230961b5ee2fcab90b3679e153bf08415e0f4dcea66656'

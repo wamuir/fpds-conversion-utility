@@ -1,0 +1,22 @@
+add_executable (conversion-utility main.c)
+
+find_package (LibXml2)
+if (LIBXML2_FOUND)
+  include_directories(${LIBXML2_INCLUDE_DIRS})
+  add_definitions(${LIBXML2_DEFINITIONS})
+  target_link_libraries(conversion-utility ${LIBXML2_LIBRARIES})
+endif (LIBXML2_FOUND)
+
+find_package (LibXslt)
+if (LIBXSLT_FOUND)
+  include_directories(${LIBXSLT_INCLUDE_DIRS})
+  add_definitions(${LIBXSLT_DEFINITIONS})
+  target_link_libraries(conversion-utility ${LIBXSLT_LIBRARIES})
+endif (LIBXSLT_FOUND)
+
+find_package (SQLite3)
+if (SQLITE3_FOUND)
+  include_directories(${SQLITE3_INCLUDE_DIRS})
+  target_link_libraries (conversion-utility ${SQLITE3_LIBRARIES})
+endif (SQLITE3_FOUND)
+
