@@ -476,7 +476,7 @@ main(int argc, char **argv) {
     /* If append flag then grab max record number from existing database
      */
     if (aflg) {
-        char *stmt = "SELECT MAX(id) FROM awardcontractid;";
+        char *stmt = "SELECT MAX(id) FROM record;";
         sqlite3_stmt *res; 
         
         rc = sqlite3_prepare_v2(db, stmt, -1, &res, NULL);    
