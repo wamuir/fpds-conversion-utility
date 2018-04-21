@@ -17,7 +17,7 @@ conversion_test() {
     fi
 }
 
-conversion_test award-14.xml '388e51ab7e4594b48d4d6dc49ea760578babc032fb6fc19ffac87bce'
-conversion_test award-15.xml '2150cbcf3d274612649ce3024edc8d165171ba1d607f77a321412586'
-conversion_test idv-14.xml '02e2ec39bddf7097cf2d1100a2488493fb7720805f683602eb2e28ac'
-conversion_test idv-15.xml '5dec71fb36230961b5ee2fcab90b3679e153bf08415e0f4dcea66656'
+conversion_test award-14.xml 'e9f7ae3aea05722acc642bc3ffbdc379c46bccf4d6b6b17219829d55'
+conversion_test award-15.xml 'fd4406b21757b86fb147d9ced8c05506e71b13d069525b7fe687c203'
+conversion_test idv-14.xml 'ece6ca14f047a7d8b46c6da1f2311ab4d88036697ac0b69985230742'
+conversion_test idv-15.xml 'e0840e99b9aed0423d1fd2f1e72bd938180d200bf356ed3e38d038cf'
