@@ -22,6 +22,7 @@
       <table cardinality="oto" sqlname="record">
         <column>
           <xsl:attribute name="sqlname">docType</xsl:attribute>
+          <xsl:attribute name="datatype">VARCHAR(5)</xsl:attribute>
           <xsl:choose>
             <xsl:when test="/*[namespace-uri()=$ns1 and local-name()='award']">
               <xsl:text>award</xsl:text>
