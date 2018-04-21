@@ -12,9 +12,11 @@
         <xsl:text> (id INTEGER</xsl:text>
       </xsl:when>
     </xsl:choose>
-    <xsl:for-each select="/table/column/@sqlname">
+    <xsl:for-each select="/table/column">
       <xsl:text>, </xsl:text>
-      <xsl:value-of select="."/>
+      <xsl:value-of select="@sqlname"/>
+      <xsl:text> </xsl:text>
+      <xsl:value-of select="@datatype"/>
       <!--<xsl:if test="position() != last()">
         <xsl:text>, </xsl:text>
       </xsl:if>-->
