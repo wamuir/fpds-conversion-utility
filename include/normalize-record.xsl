@@ -735,7 +735,7 @@
         <column>
           <xsl:attribute name="elemNo">10K</xsl:attribute>
           <xsl:attribute name="sqlname">smallBusinessCompetitivenessDemonstrationProgram</xsl:attribute>
-          <xsl:attribute name="datatype">CHARACTER(1)</xsl:attribute>
+          <xsl:attribute name="datatype">BOOLEAN</xsl:attribute>
           <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]/*[namespace-uri()=$ns1 and local-name()='competition']/*[namespace-uri()=$ns1 and local-name()='smallBusinessCompetitivenessDemonstrationProgram']"/>
           <!-- /ns1:award/ns1:competition/ns1:smallBusinessCompetitivenessDemonstrationProgram -->
         </column>
