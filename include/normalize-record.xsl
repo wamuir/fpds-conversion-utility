@@ -1441,7 +1441,8 @@
         <column>
           <xsl:attribute name="elemNo">13GG</xsl:attribute>
           <xsl:attribute name="sqlname">vendorName</xsl:attribute>
-          <xsl:attribute name="datatype">VARCHAR(100)</xsl:attribute>
+          <!-- is VARCHAR(100) in data dict v1.5 but longer data exist --> 
+          <xsl:attribute name="datatype">VARCHAR(400)</xsl:attribute>
           <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]/*[namespace-uri()=$ns1 and local-name()='vendor']/*[namespace-uri()=$ns1 and local-name()='vendorHeader']/*[namespace-uri()=$ns1 and local-name()='vendorName']"/>
           <!-- /ns1:award/ns1:vendor/ns1:vendorHeader/ns1:vendorName -->
         </column>
