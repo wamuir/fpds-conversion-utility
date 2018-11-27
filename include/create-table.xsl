@@ -6,10 +6,10 @@
     <xsl:value-of select="/table/@sqlname"/>
     <xsl:choose>
       <xsl:when test="/table/@cardinality = 'oto'">
-        <xsl:text> (id INTEGER PRIMARY KEY</xsl:text>
+        <xsl:text> (id CHAR(36) PRIMARY KEY</xsl:text>
       </xsl:when>
       <xsl:when test="/table/@cardinality = 'otm'">
-        <xsl:text> (id INTEGER</xsl:text>
+        <xsl:text> (id CHAR(36)</xsl:text>
       </xsl:when>
     </xsl:choose>
     <xsl:for-each select="/table/column">
