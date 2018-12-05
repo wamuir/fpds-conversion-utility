@@ -20,3 +20,8 @@ if (SQLITE3_FOUND)
   target_link_libraries (conversion-utility ${SQLITE3_LIBRARIES})
 endif (SQLITE3_FOUND)
 
+find_package(LibUuid)
+if (LIBUUID_FOUND)
+  include_directories(${LIBUUID_INCLUDE_DIRS})
+  target_link_libraries (conversion-utility ${LIBUUID_LIBRARIES})
+endif (LIBUUID_FOUND)

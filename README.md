@@ -45,8 +45,8 @@ was deprecated on September 30, 2017, and replaced with Version 1.5
 
 ## Compiling and running the utility
 
-The utility depends on libxml2, libxslt and sqlite3. It can be built using
-CMake.  Given an FPDS XML archive `archive.xml` the utility can be run as:
+The utility depends on libxml2, libxslt, libuuid and sqlite3. It can be built
+using CMake.  Given an FPDS XML archive `archive.xml` the utility can be run as:
 
 ```shell
 conversion-utility xml_archive sqlite3_target

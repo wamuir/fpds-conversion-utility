@@ -36,6 +36,7 @@
 #include <string.h>
 #include <sysexits.h>
 #include <unistd.h>
+#include <uuid/uuid.h>
 
 #include "create-table.h"
 #include "create-view-document-id.h"
@@ -51,10 +52,10 @@ static void usage(void);
 static void cleanup(void);
 static xmlXPathObjectPtr getXPath (xmlDocPtr doc, xmlChar *xpath);
 static void buildTable (xmlDocPtr parsedTableXML);
-static void insertRecord (xmlDocPtr parsed_table_xml, int record_number);
+static void insertRecord (xmlDocPtr parsed_table_xml, char *uuid);
 static xmlDocPtr normalizeXML(xmlTextReaderPtr reader);
-static void streamFile(const char *filename, int record_number);
-static void writeSQL (xmlDocPtr norm_xml, int record_number);
+static void streamFile(const char *filename);
+static void writeSQL (xmlDocPtr norm_xml);
 
 
 /**
@@ -157,12 +158,12 @@ createViews () {
 /**
  * insertRecord:
  * @parsed_table_xml: xml for the table
- * @record_number: id field for database
+ * @uuid: id field for database
  * 
  * Insert a record into the database
  */
 static void
-insertRecord (xmlDocPtr parsed_table_xml, int record_number) {
+insertRecord (xmlDocPtr parsed_table_xml, char *uuid) {
     int buffersize, i, rowdata;
     sqlite3_stmt *stmt;
     xmlChar *sql_text;
@@ -198,8 +199,8 @@ insertRecord (xmlDocPtr parsed_table_xml, int record_number) {
             /* Issue prepared stmt as some non-null data exists for the row */
             sqlite3_prepare_v2(db, (char *)sql_text, -1, &stmt, NULL);
 
-            /* First column `id' is the record_number */
-            sqlite3_bind_int(stmt, 1, record_number);
+            /* First column `id' is the uuid */
+            sqlite3_bind_text(stmt, 1, uuid, -1, SQLITE_TRANSIENT);
 
             /* Go back and bind previously skipped columns of nulls */
             for (j=0; j<i; j++)
@@ -255,15 +256,19 @@ normalizeXML(xmlTextReaderPtr reader) {
 /**
  * writeSQL:
  * @norm_xml: a normalized xml document 
- * @record_number: integer for id in database 
  * 
  * Write xml record to database
  */
 static void
-writeSQL (xmlDocPtr norm_xml, int record_number){
+writeSQL (xmlDocPtr norm_xml){
     int i;
     xmlNodeSetPtr table_nodeset;
     xmlXPathObjectPtr tables;
+    uuid_t binuuid;
+
+    uuid_generate_random(binuuid);
+    char *uuid = malloc(37);
+    uuid_unparse(binuuid, uuid);
 
     tables = getXPath(norm_xml, (xmlChar *)"/tables/table");
     table_nodeset = tables->nodesetval;
@@ -285,11 +290,10 @@ writeSQL (xmlDocPtr norm_xml, int record_number){
         xmlFree(raw_table_xml);
 
         /* Create the table in the database*/
-        if (record_number == 1)
-            buildTable(parsed_table_xml);
+        buildTable(parsed_table_xml);
 
         /* Insert the record into the database */
-        insertRecord(parsed_table_xml, record_number);
+        insertRecord(parsed_table_xml, uuid);
 
         xmlFreeDoc(parsed_table_xml);
     }
@@ -302,12 +306,11 @@ writeSQL (xmlDocPtr norm_xml, int record_number){
 /**
  * streamFile:
  * @filename: name of the xml file to parse
- * @record_number: starting integeger for id in database
  * 
  * Parse and process xml
  */
 static void
-streamFile(const char *filename, int record_number) {
+streamFile(const char *filename) {
     xmlTextReaderPtr reader;
 
     /* Open file in xmlReader */
@@ -328,9 +331,8 @@ streamFile(const char *filename, int record_number) {
             if ((is_award_node == 0 || is_idv_node == 0) && node_type == 1) {
                 xmlDocPtr norm_xml;
                 
-                record_number++;
                 norm_xml = normalizeXML(reader);
-                writeSQL(norm_xml, record_number);
+                writeSQL(norm_xml);
                 xmlFreeDoc(norm_xml);
 
             }
@@ -351,7 +353,7 @@ streamFile(const char *filename, int record_number) {
 int
 main(int argc, char **argv) {
     char *err_msg = 0;
-    int rc, record_number = 0;
+    int rc = 0;
     xmlDocPtr create_table_xsl_doc, insert_row_xsl_doc,
               normalize_record_xsl_doc;
 
@@ -472,34 +474,8 @@ main(int argc, char **argv) {
     /* Obtain exclusive transaction with sqlite3
      */
     rc = sqlite3_exec(db, "BEGIN EXCLUSIVE TRANSACTION", NULL, NULL, &err_msg);
-    
-    /* If append flag then grab max record number from existing database
-     */
-    if (aflg) {
-        char *stmt = "SELECT MAX(id) FROM record;";
-        sqlite3_stmt *res; 
-        
-        rc = sqlite3_prepare_v2(db, stmt, -1, &res, NULL);    
-    
-        if (rc != SQLITE_OK) {
-            fprintf(stderr, "Failed to fetch data: %s\n", sqlite3_errmsg(db));
-            sqlite3_free(err_msg);
-            sqlite3_close(db);
-            cleanup();
-            exit(EX_DATAERR);
-        } else if (sqlite3_step(res) != SQLITE_ROW) {
-            fprintf(stderr, "Step failure: %s", sqlite3_errmsg(db));
-            sqlite3_free(err_msg);
-            sqlite3_close(db);
-            cleanup();
-            exit(EX_DATAERR);
-        } else {
-            record_number = sqlite3_column_int(res, 0);
-            sqlite3_finalize(res);
-        }
-    }
-    
-    streamFile(xml_archive, record_number);
+      
+    streamFile(xml_archive);
     createViews();
 
     sqlite3_exec(db, "END TRANSACTION", NULL, NULL, &err_msg);
