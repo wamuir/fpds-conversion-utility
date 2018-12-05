@@ -792,7 +792,14 @@
           <xsl:attribute name="elemNo">10U</xsl:attribute>
           <xsl:attribute name="sqlname">localAreaSetAside</xsl:attribute>
           <xsl:attribute name="datatype">CHARACTER(1)</xsl:attribute>
-          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]/*[namespace-uri()=$ns1 and local-name()='competition']/*[namespace-uri()=$ns1 and local-name()='localAreaSetAside']"/>
+          <!-- 'BSDF' values can still be found in DHS data under LASA element but exceed CHAR(1); ref SPR# FPDSHD-64205 at https://www.fpds.gov/wiki/index.php/V1.4_SP12.0 -->
+          <xsl:variable name="lasa" select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]/*[namespace-uri()=$ns1 and local-name()='competition']/*[namespace-uri()=$ns1 and local-name()='localAreaSetAside']"/>
+          <xsl:choose>
+            <xsl:when test="$lasa='BSDF'"/>
+            <xsl:otherwise>
+              <xsl:value-of select="$lasa"/>
+            </xsl:otherwise>
+          </xsl:choose>
           <!-- /ns1:award/ns1:competition/ns1:localAreaSetAside -->
         </column>
       </table>
