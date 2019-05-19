@@ -216,7 +216,7 @@ SELECT * FROM fact;
 
 ## Limitations
 
-- Currently, no support for `other transactions`
+- ~~Currently, no support for `other transactions`~~ (Other Transaction supported added 2019-05-19)
 
 - Currently, no support for agency-specific (_e.g._, NASA) data elements
 

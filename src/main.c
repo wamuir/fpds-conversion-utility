@@ -321,14 +321,18 @@ streamFile(const char *filename) {
         int ret = xmlTextReaderRead(reader);
 
         while (ret == 1) {
-            int is_award_node, is_idv_node, node_type;
+            int is_award_node, is_idv_node, is_otaward_node, is_otidv_node, node_type;
 
             is_award_node = xmlStrncmp(xmlTextReaderConstName(reader),
                                         (xmlChar *)"ns1:award", 10);
             is_idv_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                        (xmlChar *)"ns1:IDV",8);
+                                        (xmlChar *)"ns1:IDV", 8);
+            is_otaward_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                                        (xmlChar *)"ns1:OtherTransactionAward", 26);
+            is_otidv_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                                        (xmlChar *)"ns1:OtherTransactionIDV", 24);
             node_type = xmlTextReaderNodeType(reader);
-            if ((is_award_node == 0 || is_idv_node == 0) && node_type == 1) {
+            if ((is_award_node == 0 || is_idv_node == 0 || is_otaward_node == 0 || is_otidv_node == 0) && node_type == 1) {
                 xmlDocPtr norm_xml;
                 
                 norm_xml = normalizeXML(reader);
