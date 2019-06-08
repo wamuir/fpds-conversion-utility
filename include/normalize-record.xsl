@@ -38,6 +38,11 @@
             </xsl:when>
           </xsl:choose>
         </column>
+        <column>
+          <xsl:attribute name="sqlname">deleted</xsl:attribute>
+          <xsl:attribute name="datatype">BOOLEAN</xsl:attribute>
+          <xsl:text>0</xsl:text>
+        </column>
       </table>
       <table cardinality="oto" sqlname="awardContractID">
         <column>
