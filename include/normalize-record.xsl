@@ -16,6 +16,19 @@
       <xsl:otherwise/>
     </xsl:choose>
   </xsl:template>
+  <xsl:template name="content">
+    <xsl:element name="{local-name()}">
+      <xsl:for-each select="*">
+        <xsl:element name="{local-name()}">
+          <xsl:for-each select="*">
+            <xsl:element name="{local-name()}">
+              <xsl:value-of select="."/>
+            </xsl:element>
+          </xsl:for-each>
+        </xsl:element>
+      </xsl:for-each>
+    </xsl:element>
+  </xsl:template>
   <xsl:template name="main">
     <xsl:param name="ns1"/>
     <tables>
@@ -37,6 +50,27 @@
               <xsl:text>OtherTransactionIDV</xsl:text>
             </xsl:when>
           </xsl:choose>
+        </column>
+        <column>
+          <xsl:attribute name="sqlname">fingerprint</xsl:attribute>
+          <xsl:attribute name="datatype">VARCHAR(4000)</xsl:attribute>
+          <xsl:text disable-output-escaping="yes">&lt;![CDATA[</xsl:text>
+          <xsl:text disable-output-escaping="yes">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</xsl:text>
+          <fingerprint>
+            <xsl:for-each select="/*[namespace-uri()=$ns1 and local-name()='award']/*[namespace-uri()=$ns1 and local-name()='awardID']">
+              <xsl:call-template name="content"/>
+            </xsl:for-each>
+            <xsl:for-each select="/*[namespace-uri()=$ns1 and local-name()='IDV']/*[namespace-uri()=$ns1 and local-name()='contractID']">
+              <xsl:call-template name="content"/>
+            </xsl:for-each>
+            <xsl:for-each select="/*[namespace-uri()=$ns1 and local-name()='OtherTransactionAward']/*[namespace-uri()=$ns1 and local-name()='OtherTransactionAwardID']">
+              <xsl:call-template name="content"/>
+            </xsl:for-each>
+            <xsl:for-each select="/*[namespace-uri()=$ns1 and local-name()='OtherTransactionIDV']/*[namespace-uri()=$ns1 and local-name()='OtherTransactionIDVID']">
+              <xsl:call-template name="content"/>
+            </xsl:for-each>
+          </fingerprint>
+          <xsl:text disable-output-escaping="yes">]]&gt;</xsl:text>
         </column>
         <column>
           <xsl:attribute name="sqlname">deleted</xsl:attribute>
@@ -579,7 +613,7 @@
         <column>
           <xsl:attribute name="elemNo">7D</xsl:attribute>
           <xsl:attribute name="sqlname">constructionWageRateRequirements</xsl:attribute>
-          <xsl:attribute name="datatype">CHARACTER(1)</xsl:attribute>          
+          <xsl:attribute name="datatype">CHARACTER(1)</xsl:attribute>
           <xsl:value-of select="(/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]|(/*[namespace-uri()=$ns1 and (local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and local-name()='contractDetail']))/*[namespace-uri()=$ns1 and local-name()='legislativeMandates']/*[namespace-uri()=$ns1 and (local-name()='constructionWageRateRequirements' or local-name()='DavisBaconAct')]"/>
           <!-- /ns1:award/ns1:legislativeMandates/ns1:constructionWageRateRequirements -->
         </column>
@@ -1561,7 +1595,7 @@
         <column>
           <xsl:attribute name="elemNo">13GG</xsl:attribute>
           <xsl:attribute name="sqlname">vendorName</xsl:attribute>
-          <!-- is VARCHAR(100) in data dict v1.5 but longer data exist --> 
+          <!-- is VARCHAR(100) in data dict v1.5 but longer data exist -->
           <xsl:attribute name="datatype">VARCHAR(400)</xsl:attribute>
           <xsl:value-of select="(/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]|(/*[namespace-uri()=$ns1 and (local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and local-name()='contractDetail']))/*[namespace-uri()=$ns1 and local-name()='vendor']/*[namespace-uri()=$ns1 and local-name()='vendorHeader']/*[namespace-uri()=$ns1 and local-name()='vendorName']"/>
           <!-- /ns1:award/ns1:vendor/ns1:vendorHeader/ns1:vendorName -->
