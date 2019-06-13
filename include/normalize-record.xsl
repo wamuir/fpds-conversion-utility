@@ -32,7 +32,7 @@
   <xsl:template name="main">
     <xsl:param name="ns1"/>
     <tables>
-      <table cardinality="oto" sqlname="record">
+      <table cardinality="oto" sqlname="meta">
         <column>
           <xsl:attribute name="sqlname">docType</xsl:attribute>
           <xsl:attribute name="datatype">VARCHAR(21)</xsl:attribute>
