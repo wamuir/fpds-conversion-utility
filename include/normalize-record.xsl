@@ -568,22 +568,22 @@
           <column>
             <xsl:attribute name="elemNo">6SG</xsl:attribute>
             <xsl:attribute name="sqlname">mainAccountCode</xsl:attribute>
-            <xsl:attribute name="datatype">CHARACTER(2)</xsl:attribute>
-            <xsl:value-of select="*[namespace-uri()=$ns1 and local-name()='listOfTreasuryAccounts']/*[namespace-uri()=$ns1 and local-name()='treasuryAccount']/*[namespace-uri()=$ns1 and local-name()='treasuryAccountSymbol']/*[namespace-uri()=$ns1 and local-name()='mainAccountCode']"/>
+            <xsl:attribute name="datatype">CHARACTER(4)</xsl:attribute>
+            <xsl:value-of select="*[namespace-uri()=$ns1 and local-name()='treasuryAccountSymbol']/*[namespace-uri()=$ns1 and local-name()='mainAccountCode']"/>
             <!-- ns1:listOfTreasuryAccounts/ns1:treasuryAccount/ns1:treasuryAccountSymbol/ns1:mainAccountCode -->
           </column>
           <column>
             <xsl:attribute name="elemNo">6SH</xsl:attribute>
             <xsl:attribute name="sqlname">subAccountCode</xsl:attribute>
             <xsl:attribute name="datatype">CHARACTER(3)</xsl:attribute>
-            <xsl:value-of select="*[namespace-uri()=$ns1 and local-name()='listOfTreasuryAccounts']/*[namespace-uri()=$ns1 and local-name()='treasuryAccount']/*[namespace-uri()=$ns1 and local-name()='treasuryAccountSymbol']/*[namespace-uri()=$ns1 and local-name()='subAccountCode']"/>
+            <xsl:value-of select="*[namespace-uri()=$ns1 and local-name()='treasuryAccountSymbol']/*[namespace-uri()=$ns1 and local-name()='subAccountCode']"/>
             <!-- ns1:listOfTreasuryAccounts/ns1:treasuryAccount/ns1:treasuryAccountSymbol/ns1:subAccountCode -->
           </column>
           <column>
             <xsl:attribute name="elemNo">6SI</xsl:attribute>
             <xsl:attribute name="sqlname">initiative</xsl:attribute>
             <xsl:attribute name="datatype">VARCHAR(50)</xsl:attribute>
-            <xsl:value-of select="*[namespace-uri()=$ns1 and local-name()='listOfTreasuryAccounts']/*[namespace-uri()=$ns1 and local-name()='treasuryAccount']/*[namespace-uri()=$ns1 and local-name()='initiative']"/>
+            <xsl:value-of select="*[namespace-uri()=$ns1 and local-name()='initiative']"/>
             <!-- ns1:listOfTreasuryAccounts/ns1:treasuryAccount/ns1:initiative -->
           </column>
         </table>
