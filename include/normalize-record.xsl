@@ -249,7 +249,7 @@
           <xsl:attribute name="elemNo">2F</xsl:attribute>
           <xsl:attribute name="sqlname">lastModifiedDate</xsl:attribute>
           <xsl:attribute name="datatype">DATE</xsl:attribute>
-          <xsl:value-of select="(/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]|(/*[namespace-uri()=$ns1 and (local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and local-name()='contractDetail']))/*[namespace-uri()=$ns1 and local-name()='relevantContractDates']/*[namespace-uri()=$ns1 and local-name()='lastModifiedDate']"/>
+          <xsl:value-of select="(/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV')]|(/*[namespace-uri()=$ns1 and (local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and local-name()='contractDetail']))/*[namespace-uri()=$ns1 and local-name()='transactionInformation']/*[namespace-uri()=$ns1 and local-name()='lastModifiedDate']"/>
           <!-- /ns1:award/ns1:relevantContractDates/ns1:lastModifiedDate -->
         </column>
         <column>
