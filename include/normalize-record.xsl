@@ -1688,7 +1688,7 @@
         <column>
           <xsl:attribute name="elemNo">6SG</xsl:attribute>
           <xsl:attribute name="sqlname">mainAccountCode</xsl:attribute>
-          <xsl:attribute name="datatype">CHARACTER(2)</xsl:attribute>
+          <xsl:attribute name="datatype">CHARACTER(4)</xsl:attribute>
         </column>
         <column>
           <xsl:attribute name="elemNo">6SH</xsl:attribute>
