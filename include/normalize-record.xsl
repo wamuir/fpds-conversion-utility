@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns14="http://www.fpdsng.com/FPDS" xmlns:ns15="https://www.fpds.gov/FPDS" exclude-result-prefixes="ns14 ns15" version="1.0">
   <xsl:output encoding="UTF-8" indent="yes" method="xml"/>
+  <xsl:param name="lang"/>
+  <xsl:param name="source"/>
   <xsl:template match="/">
     <xsl:choose>
       <xsl:when test="/ns14:award|/ns14:IDV|/ns14:OtherTransactionAward|/ns14:OtherTransactionIDV">
@@ -33,6 +35,18 @@
     <xsl:param name="ns1"/>
     <tables>
       <table cardinality="oto" sqlname="meta">
+        <column>
+          <xsl:attribute name="sqlname">source</xsl:attribute>
+          <xsl:choose>
+            <xsl:when test="$lang = 'postgres'">
+              <xsl:attribute name="datatype">UUID</xsl:attribute>
+            </xsl:when>
+            <xsl:otherwise>
+              <xsl:attribute name="datatype">CHAR(36)</xsl:attribute>
+            </xsl:otherwise>
+          </xsl:choose>
+          <xsl:value-of select="$source"/>
+        </column>
         <column>
           <xsl:attribute name="sqlname">docType</xsl:attribute>
           <xsl:attribute name="datatype">VARCHAR(21)</xsl:attribute>
