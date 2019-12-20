@@ -45,8 +45,31 @@ was deprecated on September 30, 2017, and replaced with Version 1.5
 
 ## Compiling and running the utility
 
+#### Compiling
+
 The utility depends on libxml2, libxslt, libuuid and sqlite3. It can be built
-using CMake.  Given an FPDS XML archive `archive.xml` the utility can be run as:
+using CMake.
+
+- **CentOS**: `yum install cmake libxml2-devel libxslt-devel libuuid-devel
+sqlite-devel`
+
+- **Ubuntu**: `apt-get install cmake libsqlite3-dev libxml2 libxslt1-dev
+uuid-dev`
+
+- **FreeBSD**: `pkg install cmake e2fsprogs-libuuid libxml2 libxslt sqlite3`
+
+Then, build with CMake:
+
+```shell
+git clone https://github.com/wamuir/fpds-conversion-utility
+mkdir build && cmake -S fpds-conversion-utility -B build && cmake --build build
+```
+
+The compiled executable will be at `build/src/conversion-utility`.
+
+#### Running
+
+Given an FPDS XML archive `archive.xml` the utility can be run as:
 
 ```shell
 conversion-utility xml_archive sqlite3_target
