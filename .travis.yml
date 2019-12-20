@@ -1,0 +1,21 @@
+language: c
+
+os:
+  - linux
+
+compiler:
+  - gcc
+  - clang
+
+addons:
+  apt:
+    packages:
+      - libsqlite3-dev
+      - libxml2
+      - libxslt1-dev
+      - uuid-dev
+
+script:
+  - cmake --version | head -n1
+  - mkdir build && cd build
+  - cmake .. && make
