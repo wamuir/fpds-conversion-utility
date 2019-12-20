@@ -25,7 +25,7 @@
  *
  */
 
-#include <getopt.h> 
+#include <getopt.h>
 #include <libxml/xmlreader.h>
 #include <libxml/xmlstring.h>
 #include <libxslt/transform.h>
@@ -50,443 +50,400 @@ static sqlite3 *db;
 static xsltStylesheetPtr create_table, insert_row, normalize_record;
 static void usage(void);
 static void cleanup(void);
-static xmlXPathObjectPtr getXPath (xmlDocPtr doc, xmlChar *xpath);
-static void buildTable (xmlDocPtr parsedTableXML);
-static void insertRecord (xmlDocPtr parsed_table_xml, char *uuid);
+static xmlXPathObjectPtr getXPath(xmlDocPtr doc, xmlChar *xpath);
+static void buildTable(xmlDocPtr parsedTableXML);
+static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid);
 static xmlDocPtr normalizeXML(xmlTextReaderPtr reader);
 static void streamFile(const char *filename);
-static void writeSQL (xmlDocPtr norm_xml);
+static void writeSQL(xmlDocPtr norm_xml);
 
-
-/**
- * usage:
- * 
+/*
  * Print command line usage
  */
-static void
-usage() {
-    fprintf(stderr, "%s\n",
-        "usage: conversion-utility [-a | -o] xml_archive sqlite3_target");
+static void usage() {
+  fprintf(stderr, "%s\n",
+          "usage: conversion-utility [-a | -o] xml_archive sqlite3_target");
 }
 
-
-/**
- * cleanup:
- * 
+/*
  * Memory management prior to program exit
  */
-static void
-cleanup(void) {
-    xsltFreeStylesheet(normalize_record);
-    xsltFreeStylesheet(create_table);
-    xsltFreeStylesheet(insert_row);
-    xsltCleanupGlobals();
-    xmlCleanupParser();
+static void cleanup(void) {
+  xsltFreeStylesheet(normalize_record);
+  xsltFreeStylesheet(create_table);
+  xsltFreeStylesheet(insert_row);
+  xsltCleanupGlobals();
+  xmlCleanupParser();
 }
 
-
-/**
- * getXPath:
- * @doc: xml
- * @xpath: xpath syntax 
- * 
+/*
  * Return xpath object
+ * @doc: xml
+ * @xpath: xpath syntax
  */
-static xmlXPathObjectPtr
-getXPath (xmlDocPtr doc, xmlChar *xpath) {
-    xmlXPathContextPtr context;
-    xmlXPathObjectPtr result;
+static xmlXPathObjectPtr getXPath(xmlDocPtr doc, xmlChar *xpath) {
+  xmlXPathContextPtr context;
+  xmlXPathObjectPtr result;
 
-    context = xmlXPathNewContext(doc);
-    result = xmlXPathEvalExpression(xpath, context);
-    xmlXPathFreeContext(context);
+  context = xmlXPathNewContext(doc);
+  result = xmlXPathEvalExpression(xpath, context);
+  xmlXPathFreeContext(context);
 
-    return result;
+  return result;
 }
 
-
-/**
- * buildTable:
- * @parsed_table_xml: xml for the table
- * 
+/*
  * Create a table (if not exists) in the database
+ * @parsed_table_xml: xml for the table
  */
-static void
-buildTable (xmlDocPtr parsed_table_xml) {
-    char *err_msg;
-    int buffersize, rc;
-    xmlDocPtr result;
-    xmlChar *sql_text;
+static void buildTable(xmlDocPtr parsed_table_xml) {
+  char *err_msg;
+  int buffersize, rc;
+  xmlDocPtr result;
+  xmlChar *sql_text;
 
-    /* Use the `create_table' xsl stylesheet to generate an SQL statement */
-    result = xsltApplyStylesheet(create_table, parsed_table_xml, NULL);
-    xsltSaveResultToString(&sql_text, &buffersize, result, create_table);
-    xmlFreeDoc(result);
+  /* Use the `create_table' xsl stylesheet to generate an SQL statement */
+  result = xsltApplyStylesheet(create_table, parsed_table_xml, NULL);
+  xsltSaveResultToString(&sql_text, &buffersize, result, create_table);
+  xmlFreeDoc(result);
 
-    /* Execute the statement */
-    rc = sqlite3_exec(db, (char *)sql_text, 0, 0, &err_msg);
-    if (rc != SQLITE_OK)
-        printf("ERROR creating table: %s\n", sqlite3_errmsg(db));
+  /* Execute the statement */
+  rc = sqlite3_exec(db, (char *)sql_text, 0, 0, &err_msg);
+  if (rc != SQLITE_OK)
+    printf("ERROR creating table: %s\n", sqlite3_errmsg(db));
 
-    sqlite3_free(err_msg);
-    xmlFree(sql_text);
+  sqlite3_free(err_msg);
+  xmlFree(sql_text);
 }
 
-
-/**
- * createViews:
-  * 
+/*
  * Create views in the database
  */
-static void
-createViews () {
-    char *err_msg;
-    int rc;
-    
-    rc = sqlite3_exec(db, (char *)create_view_document_id_sql, 0, 0, &err_msg);
-    if (rc != SQLITE_OK)
-        printf("ERROR creating document view: %s\n", sqlite3_errmsg(db));
+static void createViews() {
+  char *err_msg;
+  int rc;
 
-    rc = sqlite3_exec(db, (char *)create_view_fact_sql, 0, 0, &err_msg);
-    if (rc != SQLITE_OK)
-        printf("ERROR creating fact view: %s\n", sqlite3_errmsg(db));
+  rc = sqlite3_exec(db, (char *)create_view_document_id_sql, 0, 0, &err_msg);
+  if (rc != SQLITE_OK)
+    printf("ERROR creating document view: %s\n", sqlite3_errmsg(db));
 
-    sqlite3_free(err_msg);
+  rc = sqlite3_exec(db, (char *)create_view_fact_sql, 0, 0, &err_msg);
+  if (rc != SQLITE_OK)
+    printf("ERROR creating fact view: %s\n", sqlite3_errmsg(db));
+
+  sqlite3_free(err_msg);
 }
 
-
-/**
- * insertRecord:
+/*
+ * Insert a record into the database
  * @parsed_table_xml: xml for the table
  * @uuid: id field for database
- * 
- * Insert a record into the database
  */
-static void
-insertRecord (xmlDocPtr parsed_table_xml, char *uuid) {
-    int buffersize, i, rowdata;
-    sqlite3_stmt *stmt;
-    xmlChar *sql_text;
-    xmlDocPtr result;
-    xmlNodeSetPtr column_nodeset;
-    xmlXPathObjectPtr columns;
+static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
+  int buffersize, i, rowdata;
+  sqlite3_stmt *stmt;
+  xmlChar *sql_text;
+  xmlDocPtr result;
+  xmlNodeSetPtr column_nodeset;
+  xmlXPathObjectPtr columns;
 
-    /* Store a prepared statement for inserting the record */
-    result = xsltApplyStylesheet(insert_row, parsed_table_xml, NULL);
-    xsltSaveResultToString(&sql_text, &buffersize, result, insert_row);
-    xmlFreeDoc(result);
+  /* Store a prepared statement for inserting the record */
+  result = xsltApplyStylesheet(insert_row, parsed_table_xml, NULL);
+  xsltSaveResultToString(&sql_text, &buffersize, result, insert_row);
+  xmlFreeDoc(result);
 
-    /* Use XPath to find the columns (fields) */
-    columns = getXPath(parsed_table_xml, (xmlChar *)"/table/column");
-    column_nodeset = columns->nodesetval;
+  /* Use XPath to find the columns (fields) */
+  columns = getXPath(parsed_table_xml, (xmlChar *)"/table/column");
+  column_nodeset = columns->nodesetval;
 
-    rowdata = 0; /* A flag since we will not want to commit an all(null) row */
+  rowdata = 0; /* A flag since we will not want to commit an all(null) row */
 
-    /* Iterate through columns and issue apprporiate bind SQL statements */
-    for (i=0; i < column_nodeset->nodeNr; i++) {
-        xmlChar *value;
+  /* Iterate through columns and issue apprporiate bind SQL statements */
+  for (i = 0; i < column_nodeset->nodeNr; i++) {
+    xmlChar *value;
 
-        /* Obtain column value from xml */ 
-        value = xmlNodeGetContent(column_nodeset->nodeTab[i]);
+    /* Obtain column value from xml */
+    value = xmlNodeGetContent(column_nodeset->nodeTab[i]);
 
-        /* Check if some non-null data exists for the row */
-        if (rowdata==0 && xmlStrncmp(value, (xmlChar *)"", 1) != 0) {
-            int j;
+    /* Check if some non-null data exists for the row */
+    if (rowdata == 0 && xmlStrncmp(value, (xmlChar *)"", 1) != 0) {
+      int j;
 
-            /* Alter the flag */
-            rowdata = 1; 
+      /* Alter the flag */
+      rowdata = 1;
 
-            /* Issue prepared stmt as some non-null data exists for the row */
-            sqlite3_prepare_v2(db, (char *)sql_text, -1, &stmt, NULL);
+      /* Issue prepared stmt as some non-null data exists for the row */
+      sqlite3_prepare_v2(db, (char *)sql_text, -1, &stmt, NULL);
 
-            /* First column `id' is the uuid */
-            sqlite3_bind_text(stmt, 1, uuid, -1, SQLITE_TRANSIENT);
+      /* First column `id' is the uuid */
+      sqlite3_bind_text(stmt, 1, uuid, -1, SQLITE_TRANSIENT);
 
-            /* Go back and bind previously skipped columns of nulls */
-            for (j=0; j<i; j++)
-                sqlite3_bind_null(stmt, j+2);
-        }
-
-        /* If rowData flag, bind data to prepared stmt as appropriate */
-        if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) == 0)
-            sqlite3_bind_null(stmt, i+2);
-        else if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) != 0)
-            sqlite3_bind_text(stmt, i+2, (char *)value, -1 , SQLITE_TRANSIENT);
-
-        free(value);
+      /* Go back and bind previously skipped columns of nulls */
+      for (j = 0; j < i; j++)
+        sqlite3_bind_null(stmt, j + 2);
     }
 
-    if (rowdata == 1) {
-        int rc;
+    /* If rowData flag, bind data to prepared stmt as appropriate */
+    if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) == 0)
+      sqlite3_bind_null(stmt, i + 2);
+    else if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) != 0)
+      sqlite3_bind_text(stmt, i + 2, (char *)value, -1, SQLITE_TRANSIENT);
 
-        rc = sqlite3_step(stmt); 
-        if (rc != SQLITE_DONE)
-            fprintf(stderr, "ERROR inserting data: %s\n", sqlite3_errmsg(db));
+    free(value);
+  }
 
-        sqlite3_finalize(stmt);
-    }
+  if (rowdata == 1) {
+    int rc;
 
-    xmlXPathFreeObject(columns);
-    xmlFree(sql_text);
+    rc = sqlite3_step(stmt);
+    if (rc != SQLITE_DONE)
+      fprintf(stderr, "ERROR inserting data: %s\n", sqlite3_errmsg(db));
+
+    sqlite3_finalize(stmt);
+  }
+
+  xmlXPathFreeObject(columns);
+  xmlFree(sql_text);
 }
 
-
-/**
- * normalizeXML:
- * @reader: an xmlReader 
- * 
+/*
  * Return a normalized record
+ * @reader: an xmlReader
  */
-static xmlDocPtr
-normalizeXML(xmlTextReaderPtr reader) {
-    xmlChar *doc;
-    xmlDocPtr result, xml;
+static xmlDocPtr normalizeXML(xmlTextReaderPtr reader) {
+  xmlChar *doc;
+  xmlDocPtr result, xml;
 
-    doc = xmlTextReaderReadOuterXml(reader);
-    xml = xmlParseDoc(doc);
-    xmlFree(doc);
+  doc = xmlTextReaderReadOuterXml(reader);
+  xml = xmlParseDoc(doc);
+  xmlFree(doc);
 
-    result = xsltApplyStylesheet(normalize_record, xml, NULL);
-    xmlFreeDoc(xml);
+  result = xsltApplyStylesheet(normalize_record, xml, NULL);
+  xmlFreeDoc(xml);
 
-    return result;
+  return result;
 }
 
-
-/**
- * writeSQL:
- * @norm_xml: a normalized xml document 
- * 
+/*
  * Write xml record to database
+ * @norm_xml: a normalized xml document
  */
-static void
-writeSQL (xmlDocPtr norm_xml){
-    int i;
-    xmlNodeSetPtr table_nodeset;
-    xmlXPathObjectPtr tables;
-    uuid_t binuuid;
+static void writeSQL(xmlDocPtr norm_xml) {
+  int i;
+  xmlNodeSetPtr table_nodeset;
+  xmlXPathObjectPtr tables;
+  uuid_t binuuid;
 
-    uuid_generate_random(binuuid);
-    char *uuid = malloc(37);
-    uuid_unparse(binuuid, uuid);
+  uuid_generate_random(binuuid);
+  char *uuid = malloc(37);
+  uuid_unparse(binuuid, uuid);
 
-    tables = getXPath(norm_xml, (xmlChar *)"/tables/table");
-    table_nodeset = tables->nodesetval;
+  tables = getXPath(norm_xml, (xmlChar *)"/tables/table");
+  table_nodeset = tables->nodesetval;
 
-    for (i=0; i < table_nodeset->nodeNr; i++) {
-        xmlChar *raw_table_xml;
-        xmlBufferPtr buffer;
-        xmlDocPtr parsed_table_xml;
+  for (i = 0; i < table_nodeset->nodeNr; i++) {
+    xmlChar *raw_table_xml;
+    xmlBufferPtr buffer;
+    xmlDocPtr parsed_table_xml;
 
-        /* For each table, dump XML into a buffer and then parse
-         * ?? Better way to get from xmlNodePtr --> xmlDocPtr ??
-         */
-        buffer = xmlBufferCreate();
-        xmlNodeDump(buffer, norm_xml, table_nodeset->nodeTab[i], 2, 1);
-        raw_table_xml = buffer-> content;
-        xmlFree(buffer);
+    /*
+     * For each table, dump XML into a buffer and then parse
+     * ? Better way to get from xmlNodePtr --> xmlDocPtr ?
+     */
+    buffer = xmlBufferCreate();
+    xmlNodeDump(buffer, norm_xml, table_nodeset->nodeTab[i], 2, 1);
+    raw_table_xml = buffer->content;
+    xmlFree(buffer);
 
-        parsed_table_xml = xmlParseDoc(raw_table_xml);
-        xmlFree(raw_table_xml);
+    parsed_table_xml = xmlParseDoc(raw_table_xml);
+    xmlFree(raw_table_xml);
 
-        /* Create the table in the database*/
-        buildTable(parsed_table_xml);
+    /* Create the table in the database */
+    buildTable(parsed_table_xml);
 
-        /* Insert the record into the database */
-        insertRecord(parsed_table_xml, uuid);
+    /* Insert the record into the database */
+    insertRecord(parsed_table_xml, uuid);
 
-        xmlFreeDoc(parsed_table_xml);
-    }
+    xmlFreeDoc(parsed_table_xml);
+  }
 
-    xmlXPathFreeObject(tables);
-
+  xmlXPathFreeObject(tables);
 }
 
-
-/**
- * streamFile:
- * @filename: name of the xml file to parse
- * 
+/*
  * Parse and process xml
+ * @filename: name of the xml file to parse
  */
-static void
-streamFile(const char *filename) {
-    xmlTextReaderPtr reader;
+static void streamFile(const char *filename) {
+  xmlTextReaderPtr reader;
 
-    /* Open file in xmlReader */
-    reader = xmlReaderForFile(filename, "UTF-8", 0);
+  /* Open file in xmlReader */
+  reader = xmlReaderForFile(filename, "UTF-8", 0);
 
-    if (reader != NULL) {
+  if (reader != NULL) {
 
-        int ret = xmlTextReaderRead(reader);
+    int ret = xmlTextReaderRead(reader);
 
-        while (ret == 1) {
-            int is_award_node, is_idv_node, is_otaward_node, is_otidv_node, node_type;
+    while (ret == 1) {
+      int is_award_node, is_idv_node, is_otaward_node, is_otidv_node, node_type;
 
-            is_award_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                        (xmlChar *)"ns1:award", 10);
-            is_idv_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                        (xmlChar *)"ns1:IDV", 8);
-            is_otaward_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                        (xmlChar *)"ns1:OtherTransactionAward", 26);
-            is_otidv_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                        (xmlChar *)"ns1:OtherTransactionIDV", 24);
-            node_type = xmlTextReaderNodeType(reader);
-            if ((is_award_node == 0 || is_idv_node == 0 || is_otaward_node == 0 || is_otidv_node == 0) && node_type == 1) {
-                xmlDocPtr norm_xml;
-                
-                norm_xml = normalizeXML(reader);
-                writeSQL(norm_xml);
-                xmlFreeDoc(norm_xml);
+      is_award_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                                 (xmlChar *)"ns1:award", 10);
+      is_idv_node =
+          xmlStrncmp(xmlTextReaderConstName(reader), (xmlChar *)"ns1:IDV", 8);
+      is_otaward_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                                   (xmlChar *)"ns1:OtherTransactionAward", 26);
+      is_otidv_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                                 (xmlChar *)"ns1:OtherTransactionIDV", 24);
+      node_type = xmlTextReaderNodeType(reader);
+      if ((is_award_node == 0 || is_idv_node == 0 || is_otaward_node == 0 ||
+           is_otidv_node == 0) &&
+          node_type == 1) {
+        xmlDocPtr norm_xml;
 
-            }
+        norm_xml = normalizeXML(reader);
+        writeSQL(norm_xml);
+        xmlFreeDoc(norm_xml);
+      }
 
-            ret = xmlTextReaderRead(reader);
-        }
+      ret = xmlTextReaderRead(reader);
+    }
 
-        xmlFreeTextReader(reader);
+    xmlFreeTextReader(reader);
 
-        if (ret != 0)
-            fprintf(stderr, "Failed to parse %s\n", filename);
+    if (ret != 0)
+      fprintf(stderr, "Failed to parse %s\n", filename);
 
-    } else
-        fprintf(stderr, "Failed to open %s\n", filename);
+  } else
+    fprintf(stderr, "Failed to open %s\n", filename);
 }
 
+int main(int argc, char **argv) {
+  char *err_msg = 0;
+  int rc = 0;
+  xmlDocPtr create_table_xsl_doc, insert_row_xsl_doc, normalize_record_xsl_doc;
 
-int
-main(int argc, char **argv) {
-    char *err_msg = 0;
-    int rc = 0;
-    xmlDocPtr create_table_xsl_doc, insert_row_xsl_doc,
-              normalize_record_xsl_doc;
+  /* Check for ABI mismatches between compiled and shared libraries */
+  LIBXML_TEST_VERSION
 
-    /* Check for ABI mismatches between compiled and shared libraries */
-    LIBXML_TEST_VERSION
+  /* Parse stylesheets and create transformations */
+  create_table_xsl_doc =
+      xmlReadMemory((const char *)create_table_xsl, create_table_xsl_len,
+                    "null.xml", "UTF-8", 0);
+  create_table = xsltParseStylesheetDoc(create_table_xsl_doc);
 
-    /* Parse stylesheets and create transformations */
-    create_table_xsl_doc = xmlReadMemory((const char *)create_table_xsl,
-                        create_table_xsl_len, "null.xml", "UTF-8", 0);
-    create_table = xsltParseStylesheetDoc(create_table_xsl_doc);
-    
-    insert_row_xsl_doc = xmlReadMemory((const char *)insert_row_xsl, 
-                        insert_row_xsl_len, "null.xml", "UTF-8", 0);
-    insert_row = xsltParseStylesheetDoc(insert_row_xsl_doc);
-    
-    normalize_record_xsl_doc = xmlReadMemory((const char *)normalize_record_xsl,
-                        normalize_record_xsl_len, "null.xml", "UTF-8", 0);
-    normalize_record = xsltParseStylesheetDoc(normalize_record_xsl_doc);
+  insert_row_xsl_doc = xmlReadMemory(
+      (const char *)insert_row_xsl, insert_row_xsl_len, "null.xml", "UTF-8", 0);
+  insert_row = xsltParseStylesheetDoc(insert_row_xsl_doc);
 
-    /* Parse command line args */
-    while (1) {
-        static struct option long_options[] = {
-            {"append",     no_argument,    NULL, 'a'},
-            {"overwrite",  no_argument,    NULL, 'o'},
-            {"help",       no_argument,    NULL, 'h'}
-        };
+  normalize_record_xsl_doc =
+      xmlReadMemory((const char *)normalize_record_xsl,
+                    normalize_record_xsl_len, "null.xml", "UTF-8", 0);
+  normalize_record = xsltParseStylesheetDoc(normalize_record_xsl_doc);
 
-        int option_index = 0;
-        int c = getopt_long (argc, argv, "aoh", long_options, &option_index);
-        if (c == -1)
-            break;
+  /* Parse command line args */
+  while (1) {
+    static struct option long_options[] = {
+        {"append", no_argument, NULL, 'a'},
+        {"overwrite", no_argument, NULL, 'o'},
+        {"help", no_argument, NULL, 'h'}};
 
-        switch (c) {
-        
-            case 'a':
-                aflg = 1;
-                break;
+    int option_index = 0;
+    int c = getopt_long(argc, argv, "aoh", long_options, &option_index);
+    if (c == -1)
+      break;
 
-            case 'o':
-                oflg = 1;
-                break;
-            
-            case 'h':
-                hflg = 1;
-                break;
+    switch (c) {
 
-            default:
-                usage();
-                cleanup();
-                exit(EX_USAGE);
-                break;
-        }
+    case 'a':
+      aflg = 1;
+      break;
+
+    case 'o':
+      oflg = 1;
+      break;
+
+    case 'h':
+      hflg = 1;
+      break;
+
+    default:
+      usage();
+      cleanup();
+      exit(EX_USAGE);
+      break;
     }
-    
-    /* Perform some checking on command line arguments
-     */ 
-    if (aflg && oflg) {
-        /* Append and overwrite are mutually exclusive */
-        fprintf(stderr, "-[a]ppend and -[o]verwrite cannot be used together\n");
-        usage();
-        cleanup();
-        exit(EX_USAGE);
-    } else if (hflg) {
-        /* If --[h]elp is requested */
-        usage();
-        cleanup();
-        exit(EX_USAGE);
-    } else if ((argc-optind) != 2) {
-        /* We must have exactly two remaining args: input and output files */
-        usage();
-        cleanup();
-        exit(EX_USAGE);
-    }
+  }
 
-    /* Perform some checking on our input file
-     */
-    xml_archive = argv[optind++];
-    if(access(xml_archive, F_OK ) != 0 || access(xml_archive, R_OK ) != 0) {
-        /* If file does not exist or exists but is not readable */
-        fprintf(stderr, "Error: input file cannot be read\n");
-        cleanup();
-        exit(EX_NOINPUT);
-    }
+  /* Perform some checking on command line arguments */
+  if (aflg && oflg) {
+    /* Append and overwrite are mutually exclusive */
+    fprintf(stderr, "-[a]ppend and -[o]verwrite cannot be used together\n");
+    usage();
+    cleanup();
+    exit(EX_USAGE);
+  } else if (hflg) {
+    /* If --[h]elp is requested */
+    usage();
+    cleanup();
+    exit(EX_USAGE);
+  } else if ((argc - optind) != 2) {
+    /* We must have exactly two remaining args: input and output files */
+    usage();
+    cleanup();
+    exit(EX_USAGE);
+  }
 
-    /* Perform some checking on our target file and truncate if requested
-     */
-    sqlite3_target = argv[optind++];
-    if(access(sqlite3_target, F_OK) == 0 && !aflg && !oflg) {
-        /* If file exists but no option is selected to append or overwrite */
-        fprintf(stderr, "Error: output file exists, use -a or -o\n");
-        cleanup();
-        exit(EX_CANTCREAT);
-    } else if(access(sqlite3_target, F_OK) == 0 &&
-              access(sqlite3_target, W_OK) != 0) {
-        /* If file exists but is not writable */
-        fprintf(stderr, "Error: unable to open the output file for writing\n");
-        cleanup();
-        exit(EX_IOERR);
-    } else if(access(sqlite3_target, F_OK) == 0 &&
-              access(sqlite3_target, W_OK) == 0 && 
-              oflg && truncate(sqlite3_target, 0) != 0) {
-        /* If recv'd overwrite flag & file exists but os can't truncate */
-        fprintf(stderr, "Failed to overwrite output file.\n");
-        cleanup();
-        exit(EX_IOERR);
-    }
-    
-    /* Set up a sqlite3 connection to the target file / database
-     */ 
-    rc = sqlite3_open(sqlite3_target, &db);
-    if (rc != SQLITE_OK) {
-        fprintf(stderr, "Failed to open database: %s\n", sqlite3_errmsg(db));
-        sqlite3_close(db);
-        cleanup();
-        exit(EX_IOERR);
-    }
-    
-    /* Obtain exclusive transaction with sqlite3
-     */
-    rc = sqlite3_exec(db, "BEGIN EXCLUSIVE TRANSACTION", NULL, NULL, &err_msg);
-      
-    streamFile(xml_archive);
-    createViews();
+  /* Perform some checking on our input file */
+  xml_archive = argv[optind++];
+  if (access(xml_archive, F_OK) != 0 || access(xml_archive, R_OK) != 0) {
+    /* If file does not exist or exists but is not readable */
+    fprintf(stderr, "Error: input file cannot be read\n");
+    cleanup();
+    exit(EX_NOINPUT);
+  }
 
-    sqlite3_exec(db, "END TRANSACTION", NULL, NULL, &err_msg);
-    
-    sqlite3_free(err_msg);
+  /* Perform some checking on our target file and truncate if requested */
+  sqlite3_target = argv[optind++];
+  if (access(sqlite3_target, F_OK) == 0 && !aflg && !oflg) {
+    /* If file exists but no option is selected to append or overwrite */
+    fprintf(stderr, "Error: output file exists, use -a or -o\n");
+    cleanup();
+    exit(EX_CANTCREAT);
+  } else if (access(sqlite3_target, F_OK) == 0 &&
+             access(sqlite3_target, W_OK) != 0) {
+    /* If file exists but is not writable */
+    fprintf(stderr, "Error: unable to open the output file for writing\n");
+    cleanup();
+    exit(EX_IOERR);
+  } else if (access(sqlite3_target, F_OK) == 0 &&
+             access(sqlite3_target, W_OK) == 0 && oflg &&
+             truncate(sqlite3_target, 0) != 0) {
+    /* If recv'd overwrite flag & file exists but os can't truncate */
+    fprintf(stderr, "Failed to overwrite output file.\n");
+    cleanup();
+    exit(EX_IOERR);
+  }
+
+  /* Set up a sqlite3 connection to the target file / database */
+  rc = sqlite3_open(sqlite3_target, &db);
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "Failed to open database: %s\n", sqlite3_errmsg(db));
     sqlite3_close(db);
     cleanup();
-    exit(0);
+    exit(EX_IOERR);
+  }
 
+  /* Obtain exclusive transaction with sqlite3 */
+  rc = sqlite3_exec(db, "BEGIN EXCLUSIVE TRANSACTION", NULL, NULL, &err_msg);
+
+  streamFile(xml_archive);
+  createViews();
+
+  sqlite3_exec(db, "END TRANSACTION", NULL, NULL, &err_msg);
+
+  sqlite3_free(err_msg);
+  sqlite3_close(db);
+  cleanup();
+  exit(0);
 }
