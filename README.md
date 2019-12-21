@@ -55,10 +55,13 @@ using CMake.
 - **CentOS**: `yum install cmake libxml2-devel libxslt-devel libuuid-devel
 sqlite-devel`
 
+- **FreeBSD**: `pkg install cmake e2fsprogs-libuuid libxml2 libxslt sqlite3`
+
+- **macOS**: `brew install cmake libxml2 libxslt ossp-uuid`
+
 - **Ubuntu**: `apt-get install cmake libsqlite3-dev libxml2 libxslt1-dev
 uuid-dev`
 
-- **FreeBSD**: `pkg install cmake e2fsprogs-libuuid libxml2 libxslt sqlite3`
 
 Then, build with CMake:
 
