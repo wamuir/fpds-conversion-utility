@@ -436,6 +436,12 @@ int main(int argc, char **argv) {
 
   /* Obtain exclusive transaction with sqlite3 */
   rc = sqlite3_exec(db, "BEGIN EXCLUSIVE TRANSACTION", NULL, NULL, &err_msg);
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "Failed to begin transaction.");
+    sqlite3_close(db);
+    cleanup();
+    exit(EX_IOERR);
+  }
 
   streamFile(xml_archive);
   createViews();
