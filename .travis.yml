@@ -2,6 +2,7 @@ language: c
 
 os:
   - linux
+  - osx
 
 compiler:
   - gcc
@@ -14,6 +15,11 @@ addons:
       - libxml2
       - libxslt1-dev
       - uuid-dev
+  homebrew:
+    packages:
+      - libxml2
+      - libxslt
+      - ossp-uuid
 
 script:
   - cmake --version | head -n1
