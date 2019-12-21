@@ -61,8 +61,11 @@ static void writeSQL(xmlDocPtr norm_xml);
  * Print command line usage
  */
 static void usage() {
-  fprintf(stderr, "%s\n",
-          "usage: conversion-utility [-a | -o] xml_archive sqlite3_target");
+  fprintf(stderr, "Usage:\n");
+  fprintf(stderr, "       conversion-utility [flags] archive database\n");
+  fprintf(stderr, "Flags:\n");
+  fprintf(stderr, "    -a          append to existing SQLite3 database,\n");
+  fprintf(stderr, "    -o          overwrite existing file.\n");
 }
 
 /*
