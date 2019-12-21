@@ -233,9 +233,10 @@ static void writeSQL(xmlDocPtr norm_xml) {
   xmlNodeSetPtr table_nodeset;
   xmlXPathObjectPtr tables;
   uuid_t binuuid;
+  char* uuid;
 
   uuid_generate_random(binuuid);
-  char *uuid = malloc(37);
+  uuid = malloc(33);
   uuid_unparse(binuuid, uuid);
 
   tables = getXPath(norm_xml, (xmlChar *)"/tables/table");
@@ -267,6 +268,7 @@ static void writeSQL(xmlDocPtr norm_xml) {
     xmlFreeDoc(parsed_table_xml);
   }
 
+  free(uuid);
   xmlXPathFreeObject(tables);
 }
 
