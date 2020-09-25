@@ -14,7 +14,7 @@ if (LIBXSLT_FOUND)
   target_link_libraries(conversion-utility ${LIBXSLT_LIBRARIES})
 endif (LIBXSLT_FOUND)
 
-find_package (SQLite3)
+find_package (SQLITE3)
 if (SQLITE3_FOUND)
   include_directories(${SQLITE3_INCLUDE_DIRS})
   target_link_libraries (conversion-utility ${SQLITE3_LIBRARIES})
