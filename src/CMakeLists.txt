@@ -1,11 +1,5 @@
 add_executable (conversion-utility main.c)
 
-find_package(LibLZMA)
-if (LIBLZMA_FOUND)
-  include_directories(${LIBLZMA_INCLUDE_DIRS})
-  target_link_libraries(conversion-utility ${LIBLZMA_LIBRARIES})
-endif (LIBLZMA_FOUND)
-
 find_package (LibXml2)
 if (LIBXML2_FOUND)
   include_directories(${LIBXML2_INCLUDE_DIRS})
@@ -31,6 +25,12 @@ if (SQLITE3_FOUND)
   include_directories(${SQLITE3_INCLUDE_DIRS})
   target_link_libraries (conversion-utility ${SQLITE3_LIBRARIES})
 endif (SQLITE3_FOUND)
+
+find_package(LibLZMA)
+if (LIBLZMA_FOUND)
+  include_directories(${LIBLZMA_INCLUDE_DIRS})
+  target_link_libraries(conversion-utility ${LIBLZMA_LIBRARIES})
+endif (LIBLZMA_FOUND)
 
 find_package(ZLIB)
 if (ZLIB_FOUND)
