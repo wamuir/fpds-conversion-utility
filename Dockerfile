@@ -11,13 +11,13 @@ RUN apk add --no-cache --update \
     xz-dev \
     zlib-static
 
-RUN mkdir -p /fpds-conversion-utility/build
 COPY . /fpds-conversion-utility/
+
+ENV FPDS_STATIC=1
 
 RUN cmake \
     -S /fpds-conversion-utility \
-    -B /fpds-conversion-utility/build \
-    -D CMAKE_C_STANDARD_LIBRARIES="-static"
+    -B /fpds-conversion-utility/build
 
 RUN cmake \
     --build /fpds-conversion-utility/build
