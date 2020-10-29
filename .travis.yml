@@ -15,6 +15,7 @@ addons:
       - libxml2
       - libxslt1-dev
       - uuid-dev
+    update: true
   homebrew:
     packages:
       - libxml2
