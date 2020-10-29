@@ -11,6 +11,7 @@ compiler:
 addons:
   apt:
     packages:
+      - cmake
       - libsqlite3-dev
       - libxml2
       - libxslt1-dev
