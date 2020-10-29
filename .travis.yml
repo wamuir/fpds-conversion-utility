@@ -11,12 +11,14 @@ compiler:
 addons:
   apt:
     packages:
-      - cmake
       - libsqlite3-dev
       - libxml2
       - libxslt1-dev
       - uuid-dev
     update: true
+  snaps:
+    - name: cmake
+      confinement: classic
   homebrew:
     packages:
       - libxml2
