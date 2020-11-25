@@ -173,21 +173,21 @@
           <xsl:attribute name="elemNo">1H</xsl:attribute>
           <xsl:attribute name="sqlname">agencyID</xsl:attribute>
           <xsl:attribute name="datatype">CHARACTER(4)</xsl:attribute>
-          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV' or local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and (local-name()='awardID' or local-name='contractID' or local-name()='OtherTransactionAwardID')]/*[namespace-uri()=$ns1 and local-name()='referencedIDVID']/*[namespace-uri()=$ns1 and local-name()='agencyID']"/>
+          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV' or local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and (local-name()='awardID' or local-name()='contractID' or local-name()='OtherTransactionAwardID')]/*[namespace-uri()=$ns1 and local-name()='referencedIDVID']/*[namespace-uri()=$ns1 and local-name()='agencyID']"/>
           <!-- /ns1:award/ns1:awardID/ns1:referencedIDVID/ns1:agencyID -->
         </column>
         <column>
           <xsl:attribute name="elemNo">1C</xsl:attribute>
           <xsl:attribute name="sqlname">PIID</xsl:attribute>
           <xsl:attribute name="datatype">VARCHAR(50)</xsl:attribute>
-          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV' or local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and (local-name()='awardID' or local-name='contractID' or local-name()='OtherTransactionAwardID')]/*[namespace-uri()=$ns1 and local-name()='referencedIDVID']/*[namespace-uri()=$ns1 and local-name()='PIID']"/>
+          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV' or local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and (local-name()='awardID' or local-name()='contractID' or local-name()='OtherTransactionAwardID')]/*[namespace-uri()=$ns1 and local-name()='referencedIDVID']/*[namespace-uri()=$ns1 and local-name()='PIID']"/>
           <!-- /ns1:award/ns1:awardID/ns1:referencedIDVID/ns1:PIID -->
         </column>
         <column>
           <xsl:attribute name="elemNo">1G</xsl:attribute>
           <xsl:attribute name="sqlname">modNumber</xsl:attribute>
           <xsl:attribute name="datatype">VARCHAR(25)</xsl:attribute>
-          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV' or local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and (local-name()='awardID' or local-name='contractID' or local-name()='OtherTransactionAwardID')]/*[namespace-uri()=$ns1 and local-name()='referencedIDVID']/*[namespace-uri()=$ns1 and local-name()='modNumber']"/>
+          <xsl:value-of select="/*[namespace-uri()=$ns1 and (local-name()='award' or local-name()='IDV' or local-name()='OtherTransactionAward' or local-name()='OtherTransactionIDV')]/*[namespace-uri()=$ns1 and (local-name()='awardID' or local-name()='contractID' or local-name()='OtherTransactionAwardID')]/*[namespace-uri()=$ns1 and local-name()='referencedIDVID']/*[namespace-uri()=$ns1 and local-name()='modNumber']"/>
           <!-- /ns1:award/ns1:awardID/ns1:referencedIDVID/ns1:modNumber -->
         </column>
       </table>
