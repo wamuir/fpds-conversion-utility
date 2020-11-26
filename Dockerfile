@@ -8,6 +8,7 @@ RUN apk add --no-cache --update \
     sqlite-dev \
     sqlite-static \
     util-linux-dev \
+    xxd \
     xz-dev \
     zlib-static
 
