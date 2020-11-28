@@ -1,5 +1,7 @@
 add_executable (conversion-utility main.c)
 
+target_link_libraries(conversion-utility progressbar statusbar)
+
 find_package (LibXml2)
 if (LIBXML2_FOUND)
   include_directories(${LIBXML2_INCLUDE_DIRS})
@@ -37,3 +39,10 @@ if (ZLIB_FOUND)
   include_directories(${ZLIB_INCLUDE_DIRS})
   target_link_libraries(conversion-utility ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
+
+set(CURSES_NEED_NCURSES TRUE)
+find_package(Curses)
+if (CURSES_FOUND)
+  include_directories(${CURSES_INCLUDE_DIRS})
+  target_link_libraries(conversion-utility ${CURSES_LIBRARIES})
+endif (CURSES_FOUND)

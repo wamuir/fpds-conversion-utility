@@ -1,7 +1,7 @@
 /*
  * FPDS Archive Conversion Utility
  *
- * Copyright (c) 2018 William Muir
+ * Copyright (c) 2020 William Muir
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -38,11 +38,13 @@
 #include <unistd.h>
 #include <uuid/uuid.h>
 
-#include "create-table.h"
-#include "create-view-document-id.h"
-#include "create-view-fact.h"
-#include "insert-row.h"
-#include "normalize-record.h"
+#include "include/restyle/create-table.h"
+#include "include/restyle/create-view-document-id.h"
+#include "include/restyle/create-view-fact.h"
+#include "include/restyle/insert-row.h"
+#include "include/restyle/normalize-record.h"
+#include "progressbar.h"
+#include "statusbar.h"
 
 static int aflg, oflg, hflg;
 static char *xml_archive, *sqlite3_target;
@@ -285,42 +287,46 @@ static void streamFile(const char *filename) {
   /* Open file in xmlReader */
   reader = xmlReaderForFile(filename, "UTF-8", 0);
 
-  if (reader != NULL) {
+  if (reader == NULL) {
+    fprintf(stderr, "Failed to open %s\n", filename);
+    return;
+  }
 
-    int ret = xmlTextReaderRead(reader);
+  //if (ret != 0)
+  //  fprintf(stderr, "Failed to parse %s\n", filename);
+  progressbar *progress = progressbar_new("Loading", 3964);
 
-    while (ret == 1) {
-      int is_award_node, is_idv_node, is_otaward_node, is_otidv_node, node_type;
+  while (xmlTextReaderRead(reader)) {
 
-      is_award_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                 (xmlChar *)"ns1:award", 10);
-      is_idv_node =
-          xmlStrncmp(xmlTextReaderConstName(reader), (xmlChar *)"ns1:IDV", 8);
-      is_otaward_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                   (xmlChar *)"ns1:OtherTransactionAward", 26);
-      is_otidv_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                 (xmlChar *)"ns1:OtherTransactionIDV", 24);
-      node_type = xmlTextReaderNodeType(reader);
-      if ((is_award_node == 0 || is_idv_node == 0 || is_otaward_node == 0 ||
-           is_otidv_node == 0) &&
-          node_type == 1) {
-        xmlDocPtr norm_xml;
+    int is_award_node, is_idv_node, is_otaward_node, is_otidv_node, node_type;
 
-        norm_xml = normalizeXML(reader);
-        writeSQL(norm_xml);
-        xmlFreeDoc(norm_xml);
-      }
+    is_award_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                               (xmlChar *)"ns1:award", 10);
+    is_idv_node =
+        xmlStrncmp(xmlTextReaderConstName(reader), (xmlChar *)"ns1:IDV", 8);
+    is_otaward_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                                 (xmlChar *)"ns1:OtherTransactionAward", 26);
+    is_otidv_node = xmlStrncmp(xmlTextReaderConstName(reader),
+                               (xmlChar *)"ns1:OtherTransactionIDV", 24);
+    node_type = xmlTextReaderNodeType(reader);
 
-      ret = xmlTextReaderRead(reader);
+    if ((is_award_node == 0 || is_idv_node == 0 || is_otaward_node == 0 ||
+         is_otidv_node == 0) &&
+        node_type == 1) {
+      xmlDocPtr norm_xml;
+
+      norm_xml = normalizeXML(reader);
+      writeSQL(norm_xml);
+      xmlFreeDoc(norm_xml);
+
+      progressbar_inc(progress);
     }
 
-    xmlFreeTextReader(reader);
+  }
 
-    if (ret != 0)
-      fprintf(stderr, "Failed to parse %s\n", filename);
+  xmlFreeTextReader(reader);
+  progressbar_finish(progress);
 
-  } else
-    fprintf(stderr, "Failed to open %s\n", filename);
 }
 
 int main(int argc, char **argv) {
