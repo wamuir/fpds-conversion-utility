@@ -1,6 +1,6 @@
 add_executable (conversion-utility main.c)
 
-target_link_libraries(conversion-utility progressbar statusbar)
+target_link_libraries(conversion-utility progressbar statusbar threadpool)
 
 find_package (LibXml2)
 if (LIBXML2_FOUND)
@@ -46,3 +46,8 @@ if (CURSES_FOUND)
   include_directories(${CURSES_INCLUDE_DIRS})
   target_link_libraries(conversion-utility ${CURSES_LIBRARIES})
 endif (CURSES_FOUND)
+
+find_package(Threads)
+if (Threads_FOUND)
+  target_link_libraries(conversion-utility ${CMAKE_THREAD_LIBS_INIT})
+endif (Threads_FOUND)

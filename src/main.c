@@ -30,6 +30,8 @@
 #include <libxml/xmlstring.h>
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
+#include <omp.h>
+#include <pthread.h>
 #include <sqlite3.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +47,17 @@
 #include "include/restyle/normalize-record.h"
 #include "progressbar.h"
 #include "statusbar.h"
+#include "threadpool.h"
+
+#define THREAD 11
+#define QUEUES 256
+threadpool_t *pool;
+pthread_mutex_t lock;
+int tasks, done;
+
+enum FPDS{COUNT, AWARD, IDV, OTAWARD, OTIDV};
+
+progressbar * progress;
 
 static int aflg, oflg, hflg;
 static char *xml_archive, *sqlite3_target;
@@ -55,12 +68,12 @@ static void cleanup(void);
 static xmlXPathObjectPtr getXPath(xmlDocPtr doc, xmlChar *xpath);
 static void buildTable(xmlDocPtr parsedTableXML);
 static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid);
-static xmlDocPtr normalizeXML(xmlTextReaderPtr reader);
+static xmlDocPtr normalizeXML(xmlChar *doc);
 static void streamFile(const char *filename);
 static void writeSQL(xmlDocPtr norm_xml);
-static int isRecord(const xmlChar * name);
-static int isCount(const xmlChar * name);
+static int getType(xmlChar * name);
 static int getCount(xmlTextReaderPtr reader);
+static void task(void *arg);
 
 /*
  * Print command line usage
@@ -166,32 +179,32 @@ static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
 
   rowdata = 0; /* A flag since we will not want to commit an all(null) row */
 
-  /* Iterate through columns and issue apprporiate bind SQL statements */
+  // Iterate through columns and issue apprporiate bind SQL statements
   for (i = 0; i < column_nodeset->nodeNr; i++) {
     xmlChar *value;
 
-    /* Obtain column value from xml */
+    // Obtain column value from xml
     value = xmlNodeGetContent(column_nodeset->nodeTab[i]);
 
-    /* Check if some non-null data exists for the row */
+    // Check if some non-null data exists for the row
     if (rowdata == 0 && xmlStrncmp(value, (xmlChar *)"", 1) != 0) {
       int j;
 
-      /* Alter the flag */
+      // Alter the flag
       rowdata = 1;
 
-      /* Issue prepared stmt as some non-null data exists for the row */
+      // Issue prepared stmt as some non-null data exists for the row
       sqlite3_prepare_v2(db, (char *)sql_text, -1, &stmt, NULL);
 
-      /* First column `id' is the uuid */
+      // First column `id' is the uuid
       sqlite3_bind_text(stmt, 1, uuid, -1, SQLITE_TRANSIENT);
 
-      /* Go back and bind previously skipped columns of nulls */
+      // Go back and bind previously skipped columns of nulls
       for (j = 0; j < i; j++)
         sqlite3_bind_null(stmt, j + 2);
     }
 
-    /* If rowData flag, bind data to prepared stmt as appropriate */
+    /// If rowData flag, bind data to prepared stmt as appropriate
     if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) == 0)
       sqlite3_bind_null(stmt, i + 2);
     else if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) != 0)
@@ -218,14 +231,10 @@ static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
  * Return a normalized record
  * @reader: an xmlReader
  */
-static xmlDocPtr normalizeXML(xmlTextReaderPtr reader) {
-  xmlChar *doc;
+static xmlDocPtr normalizeXML(xmlChar *doc) {
   xmlDocPtr result, xml;
 
-  doc = xmlTextReaderReadOuterXml(reader);
   xml = xmlParseDoc(doc);
-  xmlFree(doc);
-
   result = xsltApplyStylesheet(normalize_record, xml, NULL);
   xmlFreeDoc(xml);
 
@@ -268,7 +277,9 @@ static void writeSQL(xmlDocPtr norm_xml) {
     xmlFree(raw_table_xml);
 
     /* Create the table in the database */
-    buildTable(parsed_table_xml);
+    if (done < 1) {
+      buildTable(parsed_table_xml);
+    }
 
     /* Insert the record into the database */
     insertRecord(parsed_table_xml, uuid);
@@ -280,36 +291,41 @@ static void writeSQL(xmlDocPtr norm_xml) {
   xmlXPathFreeObject(tables);
 }
 
-static int isRecord(const xmlChar * name) {
+
+/*
+ * Test if the node is an FPDS record
+ * @name: the xml node name
+ */
+static int getType(xmlChar * name) {
+
+  if (xmlStrncmp(name, (xmlChar *)"ns1:count", 10) == 0) {
+    return COUNT;
+  }
 
   if (xmlStrncmp(name, (xmlChar *)"ns1:award", 10) == 0) {
-    return 1;
+    return AWARD;
   }
 
   if (xmlStrncmp(name, (xmlChar *)"ns1:IDV", 8) == 0) {
-    return 1;
+    return IDV;
   }
 
   if (xmlStrncmp(name, (xmlChar *)"ns1:OtherTransactionAward", 26) == 0) {
-    return 1;
+    return OTAWARD;
   }
 
   if (xmlStrncmp(name, (xmlChar *)"ns1:OtherTransactionIDV", 24) == 0) {
-    return 1;
+    return OTIDV;
   }
 
-  return 0;
+  return -1;
 }
 
-static int isCount(const xmlChar * name) {
 
-  if (xmlStrncmp(name, (xmlChar *)"ns1:count", 10) == 0) {
-    return 1;
-  }
-
-  return 0;
-}
-
+/*
+ * Get the count of fetched documents via XPATH
+ * @reader: an xmlReader
+ */
 static int getCount(xmlTextReaderPtr reader) {
   xmlChar *content, *doc, *xpath;
   xmlDocPtr xml;
@@ -338,13 +354,30 @@ static int getCount(xmlTextReaderPtr reader) {
 
 
 /*
+ * Run xml and sql tasks on a thread
+ * @arg: an FPDS record as xmlChar ptr
+ */
+void task(void *arg) {
+      xmlChar *doc = (xmlChar *)arg;
+      xmlDocPtr norm;
+
+      norm = normalizeXML(doc);
+      writeSQL(norm);
+      xmlFreeDoc(norm);
+      xmlFree(doc);
+
+      pthread_mutex_lock(&lock);
+      done++;
+      progressbar_update(progress, done);
+      pthread_mutex_unlock(&lock);
+}
+
+/*
  * Parse and process xml
  * @filename: name of the xml file to parse
  */
 static void streamFile(const char *filename) {
   xmlTextReaderPtr reader;
-  progressbar * progress;
-  unsigned int i = 1;
 
   /* Open file in xmlReader */
   reader = xmlReaderForFile(filename, "UTF-8", 0);
@@ -356,34 +389,52 @@ static void streamFile(const char *filename) {
 
   progress = progressbar_new("Processing", 0);
 
+  pthread_mutex_init(&lock, NULL);
+  pool = threadpool_create(THREAD, QUEUES, 0);
+
   while (xmlTextReaderRead(reader)) {
 
-    const xmlChar * name = xmlTextReaderConstName(reader);
-    int node_type = xmlTextReaderNodeType(reader);
-
-    if (isCount(name) == 1 && node_type == 1 ) {
-      progress = progressbar_new("Processing", getCount(reader));
-      progressbar_update(progress, i);
+    if (xmlTextReaderNodeType(reader) != 1) {
+      continue;
     }
 
-    if (isRecord(name) == 1 && node_type == 1 ) {
+    xmlChar * name = xmlTextReaderName(reader);
 
-      xmlDocPtr norm_xml;
+    switch (getType(name)) {
 
-      norm_xml = normalizeXML(reader);
-      writeSQL(norm_xml);
-      xmlFreeDoc(norm_xml);
+      case COUNT:
+        progress = progressbar_new("Processing", getCount(reader));
+        break;
 
-      progressbar_inc(progress);
+      case AWARD:
+      case IDV:
+      case OTAWARD:
+      case OTIDV:
+        while ((tasks - done) >= QUEUES) {
+          usleep(10);
+        }
 
-      i++;
+        if (threadpool_add(pool, &task, xmlTextReaderReadOuterXml(reader), 0) != 0) {
+          fprintf(stderr, "ERROR: record transformation failed.\n");
+          goto end;
+        };
+
+        tasks++;
+        break;
     }
 
+    xmlFree(name);
   }
 
-  xmlFreeTextReader(reader);
-  progressbar_finish(progress);
+  while (done < tasks) {
+    usleep(10);
+  }
 
+end:
+  threadpool_destroy(pool, 0);
+  pthread_mutex_destroy(&lock);
+  progressbar_finish(progress);
+  xmlFreeTextReader(reader);
 }
 
 int main(int argc, char **argv) {
@@ -493,8 +544,12 @@ int main(int argc, char **argv) {
     exit(EX_IOERR);
   }
 
+  // NEED TO CHECK FOR THREADSAFETY
+  //fprintf(stderr, "SQLITE3 is threadsafe: %d; CONFIG FAILED: %d", sqlite3_threadsafe(), sqlite3_config(SQLITE_CONFIG_SERIALIZED));
+
   /* Set up a sqlite3 connection to the target file / database */
-  rc = sqlite3_open(sqlite3_target, &db);
+  rc = sqlite3_open_v2(sqlite3_target, &db, SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE|SQLITE_OPEN_FULLMUTEX, NULL);
+  // rc = sqlite3_open_v2(sqlite3_target, &db, SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL);
   if (rc != SQLITE_OK) {
     fprintf(stderr, "Failed to open database: %s\n", sqlite3_errmsg(db));
     sqlite3_close(db);

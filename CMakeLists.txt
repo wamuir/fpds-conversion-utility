@@ -17,7 +17,9 @@ endif()
 
 include_directories(${CMAKE_BINARY_DIR})
 include_directories(include/progressbar)
+include_directories(include/threadpool)
 
 add_subdirectory(include/restyle)
 add_subdirectory(lib/progressbar)
+add_subdirectory(lib/threadpool)
 add_subdirectory(src)
