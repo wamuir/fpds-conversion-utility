@@ -30,7 +30,6 @@
 #include <libxml/xmlstring.h>
 #include <libxslt/transform.h>
 #include <libxslt/xsltutils.h>
-#include <omp.h>
 #include <pthread.h>
 #include <sqlite3.h>
 #include <stdio.h>
