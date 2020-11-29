@@ -58,6 +58,9 @@ static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid);
 static xmlDocPtr normalizeXML(xmlTextReaderPtr reader);
 static void streamFile(const char *filename);
 static void writeSQL(xmlDocPtr norm_xml);
+static int isRecord(const xmlChar * name);
+static int isCount(const xmlChar * name);
+static int getCount(xmlTextReaderPtr reader);
 
 /*
  * Print command line usage
@@ -277,12 +280,71 @@ static void writeSQL(xmlDocPtr norm_xml) {
   xmlXPathFreeObject(tables);
 }
 
+static int isRecord(const xmlChar * name) {
+
+  if (xmlStrncmp(name, (xmlChar *)"ns1:award", 10) == 0) {
+    return 1;
+  }
+
+  if (xmlStrncmp(name, (xmlChar *)"ns1:IDV", 8) == 0) {
+    return 1;
+  }
+
+  if (xmlStrncmp(name, (xmlChar *)"ns1:OtherTransactionAward", 26) == 0) {
+    return 1;
+  }
+
+  if (xmlStrncmp(name, (xmlChar *)"ns1:OtherTransactionIDV", 24) == 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+static int isCount(const xmlChar * name) {
+
+  if (xmlStrncmp(name, (xmlChar *)"ns1:count", 10) == 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+static int getCount(xmlTextReaderPtr reader) {
+  xmlChar *content, *doc, *xpath;
+  xmlDocPtr xml;
+  xmlNodeSetPtr column_nodeset;
+  xmlXPathObjectPtr columns;
+  int ret;
+
+  doc = xmlTextReaderReadOuterXml(reader);
+  xml = xmlParseDoc(doc);
+  xmlFree(doc);
+
+  xpath = "/*[local-name() = 'count']/*[local-name() = 'fetched']";
+  columns = getXPath(xml, xpath);
+  column_nodeset = columns->nodesetval;
+
+  content = xmlNodeGetContent(column_nodeset->nodeTab[0]);
+  if (content != NULL) {
+    ret = atoi(content);
+    xmlFree(content);
+  }
+
+  xmlXPathFreeObject(columns);
+
+  return ret;
+}
+
+
 /*
  * Parse and process xml
  * @filename: name of the xml file to parse
  */
 static void streamFile(const char *filename) {
   xmlTextReaderPtr reader;
+  progressbar * progress;
+  unsigned int i = 1;
 
   /* Open file in xmlReader */
   reader = xmlReaderForFile(filename, "UTF-8", 0);
@@ -292,27 +354,20 @@ static void streamFile(const char *filename) {
     return;
   }
 
-  //if (ret != 0)
-  //  fprintf(stderr, "Failed to parse %s\n", filename);
-  progressbar *progress = progressbar_new("Loading", 3964);
+  progress = progressbar_new("Processing", 0);
 
   while (xmlTextReaderRead(reader)) {
 
-    int is_award_node, is_idv_node, is_otaward_node, is_otidv_node, node_type;
+    const xmlChar * name = xmlTextReaderConstName(reader);
+    int node_type = xmlTextReaderNodeType(reader);
 
-    is_award_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                               (xmlChar *)"ns1:award", 10);
-    is_idv_node =
-        xmlStrncmp(xmlTextReaderConstName(reader), (xmlChar *)"ns1:IDV", 8);
-    is_otaward_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                                 (xmlChar *)"ns1:OtherTransactionAward", 26);
-    is_otidv_node = xmlStrncmp(xmlTextReaderConstName(reader),
-                               (xmlChar *)"ns1:OtherTransactionIDV", 24);
-    node_type = xmlTextReaderNodeType(reader);
+    if (isCount(name) == 1 && node_type == 1 ) {
+      progress = progressbar_new("Processing", getCount(reader));
+      progressbar_update(progress, i);
+    }
 
-    if ((is_award_node == 0 || is_idv_node == 0 || is_otaward_node == 0 ||
-         is_otidv_node == 0) &&
-        node_type == 1) {
+    if (isRecord(name) == 1 && node_type == 1 ) {
+
       xmlDocPtr norm_xml;
 
       norm_xml = normalizeXML(reader);
@@ -320,6 +375,8 @@ static void streamFile(const char *filename) {
       xmlFreeDoc(norm_xml);
 
       progressbar_inc(progress);
+
+      i++;
     }
 
   }
