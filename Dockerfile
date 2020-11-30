@@ -36,7 +36,7 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
     libncurses-dev \
     libsqlite3-dev \
     libxml2 \
-    libxslt1-dev
+    libxslt1-dev \
     uuid-dev \
     zlib1g
 
