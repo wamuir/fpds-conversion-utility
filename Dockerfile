@@ -24,6 +24,7 @@ RUN cd cmake-${CMAKE_VERSION} && ./bootstrap && make -j$(nproc) install clean
 # build conversion utility
 ENV FPDS_STATIC=0
 WORKDIR /opt/fpds-conversion-utility
+COPY . .
 RUN cmake -S /opt/fpds-conversion-utility -B /opt/fpds-conversion-utility/build
 RUN cmake --build /opt/fpds-conversion-utility/build
 
@@ -39,6 +40,6 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
     uuid-dev \
     zlib1g
 
-COPY --from=0 /opt/fpds-conversion-utility/build/src/conversion-utility /usr/local/bin/conversion-utility
+COPY --from=0 /opt/fpds-conversion-utility/build/app/conversion-utility /usr/local/bin/conversion-utility
 
 ENTRYPOINT ["/usr/local/bin/conversion-utility"]
