@@ -15,6 +15,7 @@
   </xsl:template>
   <xsl:template match="/ns14:award|/ns14:IDV|/ns14:OtherTransactionAward|/ns14:OtherTransactionIDV|/ns15:award|/ns15:IDV|/ns15:OtherTransactionAward|/ns15:OtherTransactionIDV">
     <tables>
+      <xsl:call-template name="ns15:dummy"/>
       <xsl:call-template name="ns15:meta"/>
       <xsl:call-template name="ns15:awardContractID"/>
       <xsl:call-template name="ns15:IDVID"/>
@@ -38,7 +39,7 @@
       <xsl:call-template name="ns15:contractorDataB"/>
     </tables>
   </xsl:template>
-  <xsl:template match="ns15:dummy">
+  <xsl:template name="ns15:dummy">
     <!--- Begin dummy nodes for one-to-many tables to enforce table creation in database -->
     <table cardinality="otm" sqlname="additionalReporting">
       <column>
