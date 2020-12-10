@@ -9,9 +9,9 @@ utility.  Converts one or more FPDS data archives to a SQLite3 database.
 
 This project intends to provide an unofficial replacement to the FPDS XML
 archive conversion utility.  It addresses several of the issues/limitations
-(identified below) with the existing, but now discontinued, utility . This
+(identified below) with the existing, but now discontinued, utility. This
 conversion utility will convert one or more FPDS XML archives to a SQLite3
-database and provides support for FPDS Specifications Versions 1.4 and 1.5.
+database and provides support for FPDS Specification Versions 1.4 and 1.5.
 
 #### Background
 
@@ -43,6 +43,8 @@ available for download, several issues preclude its use:
   1.3.  Archives are no longer posted in this version.  Version 1.3 was
   deprecated on December 31, 2010, and replaced with Version 1.4.  Version 1.4
   was deprecated on September 30, 2017, and replaced with Version 1.5
+
+Agency archives can be obtained from [https://www.fpds.gov](fpds.gov).
 
 
 ## Compiling and running the utility
@@ -234,9 +236,8 @@ conn.close()
 
 #### Exporting archive data from SQLite3 to a flat file
 
-Ideally, don't do this.  For those still wishing to flatten and export data, a
-fact table view is provided of one-to-one relationships and can be exported as
-follows:
+Ideally, don't do this. If you wish to flatten and export data, a flat table
+view is provided of one-to-one relationships and can be exported as follows:
 
 ```sql
 .open archive.sqlite3
