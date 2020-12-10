@@ -16,10 +16,15 @@ if($ENV{FPDS_STATIC} MATCHES "1")
 endif()
 
 include_directories(${CMAKE_BINARY_DIR})
-include_directories(include/progressbar)
-include_directories(include/threadpool)
+include_directories(include)
+include_directories(extern/progressbar/include/progressbar)
+include_directories(extern/threadpool/src)
 
 add_subdirectory(include/restyle)
-add_subdirectory(lib/progressbar)
-add_subdirectory(lib/threadpool)
+add_subdirectory(extern/progressbar)
+add_subdirectory(app)
 add_subdirectory(src)
+
+add_library(threadpool extern/threadpool/src/threadpool.c)
+set_target_properties(threadpool PROPERTIES PUBLIC_HEADER
+  ${PROJECT_SOURCE_DIR}/include/threadpool/threadpool.h)

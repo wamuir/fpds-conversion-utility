@@ -16,7 +16,7 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
     zlib1g-dev
 
 # build cmake from source
-ENV CMAKE_VERSION=3.19.1
+ENV CMAKE_VERSION=3.14.7
 WORKDIR /opt/cmake
 RUN curl -Ls https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz | tar xz
 RUN cd cmake-${CMAKE_VERSION} && ./bootstrap && make -j$(nproc) install clean
@@ -24,7 +24,6 @@ RUN cd cmake-${CMAKE_VERSION} && ./bootstrap && make -j$(nproc) install clean
 # build conversion utility
 ENV FPDS_STATIC=0
 WORKDIR /opt/fpds-conversion-utility
-COPY . .
 RUN cmake -S /opt/fpds-conversion-utility -B /opt/fpds-conversion-utility/build
 RUN cmake --build /opt/fpds-conversion-utility/build
 
