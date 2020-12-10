@@ -49,28 +49,31 @@ was deprecated on September 30, 2017, and replaced with Version 1.5
 
 #### Compiling
 
-The utility depends on libxml2, libxslt, libuuid and sqlite3. It can be built
-using CMake.
-
-- **CentOS**: `yum install cmake libxml2-devel libxslt-devel libuuid-devel
-sqlite-devel`
-
-- **FreeBSD**: `pkg install cmake e2fsprogs-libuuid libxml2 libxslt sqlite3`
-
-- **macOS**: `brew install cmake libxml2 libxslt ossp-uuid`
-
-- **Ubuntu**: `apt-get install cmake libsqlite3-dev libxml2 libxslt1-dev
-uuid-dev`
-
-
-Then, build with CMake:
+This utility can be built using CMake > 3.14. Obtain the necessary depedencies,
+for example on **Debian/Ubuntu**:
 
 ```shell
-git clone https://github.com/wamuir/fpds-conversion-utility
-mkdir build && cmake -S fpds-conversion-utility -B build && cmake --build build
+$ sudo apt-get -y install \
+        build-essential \
+        cmake \
+        liblzma-dev \
+        libncurses-dev \
+        libsqlite3-dev \
+        libxml2 \
+        libxslt1-dev \
+        uuid-dev \
+        xxd \
+        zlib1g-dev
 ```
 
-The compiled executable will be at `build/src/conversion-utility`.
+Verify that you have CMAKE > 3.14 using `cmake --version` and then build:
+
+```shell
+$ git clone --recurse-submodules https://github.com/wamuir/fpds-conversion-utility
+$ mkdir build && cmake -S fpds-conversion-utility -B build && cmake --build build
+```
+
+The compiled executable will be at `build/app/conversion-utility`.
 
 #### Running
 
@@ -81,18 +84,19 @@ conversion-utility xml_archive sqlite3_target
 ```
 
 Multiple XML archives can be combined into a single SQLite database by invoking 
-the `--append` flag:
+the append (`-a`) flag:
 
 ```shell
 ./conversion-utility archive1.xml bundle.sqlite3
-./conversion-utility --append archive2.xml bundle.sqlite3
-./conversion-utility --append archive3.xml bundle.sqlite3
+./conversion-utility -a archive2.xml bundle.sqlite3
+./conversion-utility -a archive3.xml bundle.sqlite3
 ```
 
-And an existing database can be overwritten by invoking the `--overwrite` flag:
+And an existing database can be overwritten by invoking the overwrite (`-o`)
+flag:
 
 ```shell
-./conversion-utility --overwrite archive.xml db.sqlite3
+./conversion-utility -o archive.xml db.sqlite3
 ``` 
 
 #### Performance
