@@ -1,0 +1,6 @@
+[submodule "extern/threadpool"]
+	path = extern/threadpool
+	url = https://github.com/mbrossard/threadpool.git
+[submodule "extern/progressbar"]
+	path = extern/progressbar
+	url = https://github.com/doches/progressbar.git

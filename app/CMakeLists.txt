@@ -1,0 +1,35 @@
+add_executable (conversion-utility main.c)
+
+target_link_libraries(conversion-utility fpds-converter progressbar statusbar)
+
+find_package (LibXml2)
+if (LIBXML2_FOUND)
+  include_directories(${LIBXML2_INCLUDE_DIRS})
+  add_definitions(${LIBXML2_DEFINITIONS})
+  target_link_libraries(conversion-utility ${LIBXML2_LIBRARIES})
+endif (LIBXML2_FOUND)
+
+find_package (SQLite3)
+if (SQLite3_FOUND)
+  include_directories(${SQLite3_INCLUDE_DIRS})
+  target_link_libraries (conversion-utility ${SQLite3_LIBRARIES})
+endif (SQLite3_FOUND)
+
+find_package(LibLZMA)
+if (LIBLZMA_FOUND)
+  include_directories(${LIBLZMA_INCLUDE_DIRS})
+  target_link_libraries(conversion-utility ${LIBLZMA_LIBRARIES})
+endif (LIBLZMA_FOUND)
+
+find_package(ZLIB)
+if (ZLIB_FOUND)
+  include_directories(${ZLIB_INCLUDE_DIRS})
+  target_link_libraries(conversion-utility ${ZLIB_LIBRARIES})
+endif (ZLIB_FOUND)
+
+set(CURSES_NEED_NCURSES TRUE)
+find_package(Curses)
+if (CURSES_FOUND)
+  include_directories(${CURSES_INCLUDE_DIRS})
+  target_link_libraries(conversion-utility ${CURSES_LIBRARIES})
+endif (CURSES_FOUND)
