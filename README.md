@@ -2,54 +2,54 @@
 
 # FPDS XML Conversion Utility
 
-An unofficial replacement for the (now defunct) official FPDS XML conversion 
+An unofficial replacement for the (now defunct) official FPDS XML conversion
 utility.  Converts one or more FPDS data archives to a SQLite3 database.
 
 ## About this project
 
-This project intends to provide an unofficial replacement to the FPDS XML 
-archive conversion utility.  It addresses several the issues/limitations 
-(identified below) with the existing, but now discontinued, utility . This 
-conversion utility will convert one or more FPDS XML archives to a SQLite3 
+This project intends to provide an unofficial replacement to the FPDS XML
+archive conversion utility.  It addresses several of the issues/limitations
+(identified below) with the existing, but now discontinued, utility . This
+conversion utility will convert one or more FPDS XML archives to a SQLite3
 database and provides support for FPDS Specifications Versions 1.4 and 1.5.
 
 #### Background
 
-The [Federal Procurement Data System (FPDS)](https://www.fpds.gov/) houses 
-procurement/spend data for the U.S. Government.  Archives of annual spend data 
-are available in XML format for each Federal agency.  Previously, the General 
-Services Administration (GSA; the Federal agency who manages FPDS) published an 
-XML conversion utility for converting an FPDS data archive into a 
-pipe-separated [flat] file. The conversion utility was useful since the 
-converted data could easily be imported into spreadsheet software and 
-statistical packages, which increases the accessibility of Federal procurement 
-data to taxpayers, agencies, suppliers and other parties.<sup 
+The [Federal Procurement Data System (FPDS)](https://www.fpds.gov/) houses
+procurement/spend data for the U.S. Government.  Archives of annual spend data
+are available in XML format for each Federal agency.  Previously, the General
+Services Administration (GSA; the Federal agency who manages FPDS) published an
+XML conversion utility for converting an FPDS data archive into a
+pipe-separated [flat] file. The conversion utility was useful since the
+converted data could easily be imported into spreadsheet software and
+statistical packages, which increases the accessibility of Federal procurement
+data to taxpayers, agencies, suppliers and other parties.<sup
 id="a1">[1](#f1)</sup>
 
-Support for the GSA's XML conversion utility was discontinued in 2009/2010 and 
-no official replacement has been published.  While the utility is still 
+Support for the GSA's XML conversion utility was discontinued in 2009/2010 and
+no official replacement has been published.  While the utility is still
 available for download, several issues preclude its use:
 
-- Data complexity has increased such that a single flat file may no longer 
-properly and efficiently represent relationships between data elements (_e.g._, 
-in cardinality)
+- Data complexity has increased such that a single flat file may no longer
+  properly and efficiently represent relationships between data elements
+  (_e.g._, in cardinality)
 
-- For several agencies, the quantity of data may exceed the limits of 
-commonly-used spreadsheet software (_e.g._, Microsoft Excel, LibreOffice Calc) 
-and/or preclude usability of pivot tables and other tools for 
-summarizing/aggregating data.
+- For several agencies, the quantity of data may exceed the limits of
+  commonly-used spreadsheet software (_e.g._, Microsoft Excel, LibreOffice
+  Calc) and/or preclude usability of pivot tables and other tools for
+  summarizing/aggregating data.
 
-- Support for conversion of XML archives ended with FPDS Specification Version 
-1.3.  Archives are no longer posted in this version.  Version 1.3 was 
-deprecated on December 31, 2010, and replaced with Version 1.4.  Version 1.4 
-was deprecated on September 30, 2017, and replaced with Version 1.5
+- Support for conversion of XML archives ended with FPDS Specification Version
+  1.3.  Archives are no longer posted in this version.  Version 1.3 was
+  deprecated on December 31, 2010, and replaced with Version 1.4.  Version 1.4
+  was deprecated on September 30, 2017, and replaced with Version 1.5
 
 
 ## Compiling and running the utility
 
 #### Compiling
 
-This utility can be built using CMake > 3.14. Obtain the necessary depedencies,
+This utility can be built using CMake >= 3.14. Obtain the necessary depedencies,
 for example on **Debian/Ubuntu**:
 
 ```shell
@@ -66,7 +66,7 @@ $ sudo apt-get -y install \
         zlib1g-dev
 ```
 
-Verify that you have CMAKE > 3.14 using `cmake --version` and then build:
+Verify that you have CMake >= 3.14 using `cmake --version` and then build:
 
 ```shell
 $ git clone --recurse-submodules https://github.com/wamuir/fpds-conversion-utility
@@ -83,7 +83,7 @@ Given an FPDS XML archive `archive.xml` the utility can be run as:
 conversion-utility xml_archive sqlite3_target
 ```
 
-Multiple XML archives can be combined into a single SQLite database by invoking 
+Multiple XML archives can be combined into a single SQLite database by invoking
 the append (`-a`) flag:
 
 ```shell
@@ -101,9 +101,9 @@ flag:
 
 #### Performance
 
-This utility implements a streaming XML parser to limit memory usage, which is 
-especially useful for converting large archives.  The conversion rate is 
-generally greater than 100 records per second (machine dependent).  
+This utility implements a streaming XML parser to limit memory usage, which is
+especially useful for converting large archives.  The conversion rate is
+generally greater than 100 records per second (machine dependent).
 
 ## Database schema
 
@@ -234,8 +234,8 @@ conn.close()
 
 #### Exporting archive data from SQLite3 to a flat file
 
-Ideally, don't do this.  For those still wishing to flatten and export data, a 
-fact table view is provided of one-to-one relationships and can be exported as 
+Ideally, don't do this.  For those still wishing to flatten and export data, a
+fact table view is provided of one-to-one relationships and can be exported as
 follows:
 
 ```sql
@@ -253,11 +253,11 @@ SELECT * FROM fact;
 - Currently, no support for agency-specific (_e.g._, NASA) data elements
 
 
-<br/><br/> <b id="f1">1</b> Specifically, this refers to the accessibility of 
-sets of data for analyses. Individual transactions can be searched/queried at 
-[fpds.gov](https://www.fpds.gov/). Data is also available via ATOM Feed as well 
-as aggregator sites (_e.g._, [usaspending.gov](https://www.usaspending.gov)) 
-but do not resolve one or more of the issues identified or present additional 
+<br/><br/> <b id="f1">1</b> Specifically, this refers to the accessibility of
+sets of data for analyses. Individual transactions can be searched/queried at
+[fpds.gov](https://www.fpds.gov/). Data is also available via ATOM Feed as well
+as aggregator sites (_e.g._, [usaspending.gov](https://www.usaspending.gov))
+but do not resolve one or more of the issues identified or present additional
 issues.[↩](#a1)
  
 
