@@ -83,7 +83,7 @@ Given an FPDS XML archive `archive.xml` the utility can be run as:
 
 ```shell
 conversion-utility xml_archive sqlite3_target
-``
+```
 
 Multiple XML archives can be combined into a single SQLite database by invoking
 the append (`-a`) flag:
