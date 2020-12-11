@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/wamuir/fpds-conversion-utility.svg?branch=master)](https://travis-ci.org/wamuir/fpds-conversion-utility)
+[![Build Status](https://travis-ci.com/wamuir/fpds-conversion-utility.svg?branch=master)](https://travis-ci.com/wamuir/fpds-conversion-utility)
 
 # FPDS XML Conversion Utility
 
