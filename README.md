@@ -83,7 +83,7 @@ Given an FPDS XML archive `archive.xml` the utility can be run as:
 
 ```shell
 conversion-utility xml_archive sqlite3_target
-```
+``
 
 Multiple XML archives can be combined into a single SQLite database by invoking
 the append (`-a`) flag:
@@ -106,6 +106,17 @@ flag:
 This utility implements a streaming XML parser to limit memory usage, which is
 especially useful for converting large archives.  The conversion rate is
 generally greater than 100 records per second (machine dependent).
+
+To make use of multiple threads, pass the (`-t`) option with the desired number of
+threads, such as:
+
+```shell
+./conversion-utility -t 4 archive.xml target.sqlite3
+```
+
+By default only a single thread is used (equivalent to `-t 1`).  The optimal value
+for `t` depends on machine characteristics such as the processor and io.
+
 
 ## Database schema
 
