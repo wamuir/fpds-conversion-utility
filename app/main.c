@@ -25,6 +25,7 @@
  *
  */
 
+#include <errno.h>
 #include <getopt.h>
 #include <libxml/xmlreader.h>
 #include <libxml/xmlstring.h>
@@ -51,8 +52,9 @@ static void usage(void) {
   fprintf(stderr, "Usage:\n");
   fprintf(stderr, "       conversion-utility [flags] archive database\n");
   fprintf(stderr, "Flags:\n");
-  fprintf(stderr, "    -a          append to existing SQLite3 database,\n");
-  fprintf(stderr, "    -o          overwrite existing file.\n");
+  fprintf(stderr, "    -a          append to existing database.\n");
+  fprintf(stderr, "    -o          overwrite existing database.\n");
+  fprintf(stderr, "    -t          number of threads use (default = 1).\n");
 }
 
 /*
@@ -61,27 +63,22 @@ static void usage(void) {
 static void cleanup(void) { xmlCleanupParser(); }
 
 int main(int argc, char **argv) {
-  char *xml_archive, *sqlite3_target;
-  char *err_msg = 0;
-  int rc = 0;
+  char *cval, *endptr, *err_msg, *sqlite3_target, *str, *xml_archive;
+  int ch, option_index = 0, rc = 0;
+  long threads = 1;
   sqlite3 *db;
   xmlTextReaderPtr reader;
 
+  static struct option o[] = {{"append", no_argument, NULL, 'a'},
+                              {"overwrite", no_argument, NULL, 'o'},
+                              {"help", no_argument, NULL, 'h'},
+                              {"threads", required_argument, NULL, 't'},
+                              {NULL, 0, NULL, 0}};
+
   /* Parse command line args */
-  while (1) {
-    static struct option long_options[] = {
-        {"append", no_argument, NULL, 'a'},
-        {"overwrite", no_argument, NULL, 'o'},
-        {"help", no_argument, NULL, 'h'},
-	{NULL, 0, NULL, 0}
-    };
+  while ((ch = getopt_long(argc, argv, "t:aoh", o, &option_index)) != -1) {
 
-    int option_index = 0;
-    int c = getopt_long(argc, argv, "aoh", long_options, &option_index);
-    if (c == -1)
-      break;
-
-    switch (c) {
+    switch (ch) {
 
     case 'a':
       aflg = 1;
@@ -95,11 +92,29 @@ int main(int argc, char **argv) {
       hflg = 1;
       break;
 
+    case 't':
+      errno = 0;
+      threads = strtol(optarg, &endptr, 10);
+
+      if ((errno == ERANGE && (threads == LONG_MAX || threads == LONG_MIN)) ||
+          (errno != 0 && threads == 0)) {
+        perror("strtol");
+        cleanup();
+        exit(EX_USAGE);
+      }
+
+      if (*endptr != 0 || threads <= 0) {
+        fprintf(stderr, "Error: the number of threads must be passed as a "
+                        "positive integer\n");
+        cleanup();
+        exit(EX_USAGE);
+      }
+      break;
+
     default:
       usage();
       cleanup();
       exit(EX_USAGE);
-      break;
     }
   }
 
@@ -180,7 +195,7 @@ int main(int argc, char **argv) {
 
   progress = progressbar_new("Processing", 0);
 
-  if (stream(reader, db, progress) != 0) {
+  if (stream(reader, db, threads, progress) != 0) {
     fprintf(stderr, "Conversion Failed");
   }
 

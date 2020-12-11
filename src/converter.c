@@ -47,8 +47,6 @@
 #include "statusbar.h"
 #include "threadpool.h"
 
-#define THREAD 11
-#define QUEUES 256
 threadpool_t *pool;
 pthread_mutex_t lock;
 int fetched, done;
@@ -378,8 +376,10 @@ void task(void *arg) {
  * Parse and process xml
  * @filename: name of the xml file to parse
  */
-int stream(xmlTextReaderPtr reader, sqlite3 *conn, progressbar *progress) {
+int stream(xmlTextReaderPtr reader, sqlite3 *conn, int threads,
+           progressbar *progress) {
   char *err_msg = 0;
+  int queue = threads * 12;
   int rc = 0;
   int ret = 1;
   int tasks = 0;
@@ -397,7 +397,7 @@ int stream(xmlTextReaderPtr reader, sqlite3 *conn, progressbar *progress) {
   setup();
 
   pthread_mutex_init(&lock, NULL);
-  pool = threadpool_create(THREAD, QUEUES, 0);
+  pool = threadpool_create(threads, queue, 0);
 
   while (xmlTextReaderRead(reader)) {
 
@@ -420,7 +420,7 @@ int stream(xmlTextReaderPtr reader, sqlite3 *conn, progressbar *progress) {
     case IDV:
     case OTAWARD:
     case OTIDV:
-      while ((tasks - done) >= QUEUES) {
+      while ((tasks - done) >= queue) {
         usleep(10);
       }
 

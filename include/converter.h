@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-int stream(xmlTextReaderPtr reader, sqlite3 *conn, progressbar *progress);
+int stream(xmlTextReaderPtr reader, sqlite3 *conn, long threads, progressbar *progress);
 
 #ifdef __cplusplus
 }
