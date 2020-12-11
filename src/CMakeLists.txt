@@ -58,7 +58,7 @@ foreach(file ${files})
         get_filename_component(fn ${file} NAME)
         get_filename_component(bn ${file} NAME_WLE)
         execute_process(
-                COMMAND xxd -i ${fn} ${CMAKE_BINARY_DIR}/include/restyle/${bn}.h
+                COMMAND xxd -i ${fn} ${CMAKE_BINARY_DIR}/${bn}.h
                 WORKING_DIRECTORY ${pt}
         )
 endforeach()

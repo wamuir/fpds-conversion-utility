@@ -20,7 +20,6 @@ include_directories(include)
 include_directories(extern/progressbar/include/progressbar)
 include_directories(extern/threadpool/src)
 
-add_subdirectory(include/restyle)
 add_subdirectory(extern/progressbar)
 add_subdirectory(app)
 add_subdirectory(src)

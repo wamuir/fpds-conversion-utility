@@ -38,11 +38,11 @@
 #include <unistd.h>
 #include <uuid/uuid.h>
 
-#include "include/restyle/create-table.h"
-#include "include/restyle/create-view-document-id.h"
-#include "include/restyle/create-view-fact.h"
-#include "include/restyle/insert-row.h"
-#include "include/restyle/normalize-record.h"
+#include "create-table.h"
+#include "create-view-document-id.h"
+#include "create-view-fact.h"
+#include "insert-row.h"
+#include "normalize-record.h"
 #include "progressbar.h"
 #include "statusbar.h"
 #include "threadpool.h"
