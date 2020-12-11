@@ -328,23 +328,23 @@ static int getType(xmlChar *name) {
  * @reader: an xmlReader
  */
 static int getCount(xmlTextReaderPtr reader) {
+  int ret;
   xmlChar *content, *doc, *xpath;
   xmlDocPtr xml;
   xmlNodeSetPtr column_nodeset;
   xmlXPathObjectPtr columns;
-  int ret;
 
   doc = xmlTextReaderReadOuterXml(reader);
   xml = xmlParseDoc(doc);
   xmlFree(doc);
 
-  xpath = "/*[local-name() = 'count']/*[local-name() = 'fetched']";
+  xpath = (xmlChar *)"/*[local-name() = 'count']/*[local-name() = 'fetched']";
   columns = getXPath(xml, xpath);
   column_nodeset = columns->nodesetval;
 
   content = xmlNodeGetContent(column_nodeset->nodeTab[0]);
   if (content != NULL) {
-    ret = atoi(content);
+    ret = atoi((char *)content);
     xmlFree(content);
   }
 
