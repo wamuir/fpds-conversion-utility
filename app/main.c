@@ -63,7 +63,7 @@ static void usage(void) {
 static void cleanup(void) { xmlCleanupParser(); }
 
 int main(int argc, char **argv) {
-  char *cval, *endptr, *err_msg, *sqlite3_target, *str, *xml_archive;
+  char *endptr, *sqlite3_target, *xml_archive;
   int ch, option_index = 0, rc = 0;
   long threads = 1;
   sqlite3 *db;
@@ -202,7 +202,6 @@ int main(int argc, char **argv) {
   progressbar_finish(progress);
   xmlFreeTextReader(reader);
 
-  //sqlite3_free(err_msg);
   sqlite3_close(db);
   cleanup();
   exit(0);
