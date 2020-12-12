@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
   progressbar_finish(progress);
   xmlFreeTextReader(reader);
 
-  sqlite3_free(err_msg);
+  //sqlite3_free(err_msg);
   sqlite3_close(db);
   cleanup();
   exit(0);
