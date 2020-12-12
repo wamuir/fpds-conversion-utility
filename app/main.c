@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
   LIBXML_TEST_VERSION
 
   /* Open file in xmlReader */
-  reader = xmlReaderForFile(xml_archive, "UTF-8", 0);
+  reader = xmlReaderForFile(xml_archive, "UTF-8", XML_PARSE_PEDANTIC);
   if (reader == NULL) {
     fprintf(stderr, "Failed to open %s\n", xml_archive);
     exit(EX_IOERR);
