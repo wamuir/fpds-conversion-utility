@@ -64,7 +64,8 @@ static void cleanup(void) { xmlCleanupParser(); }
 
 int main(int argc, char **argv) {
   char *endptr, *sqlite3_target, *xml_archive;
-  int ch, option_index = 0, rc = 0;
+  int ch, rc;
+  int option_index = 0;
   long threads = 1;
   sqlite3 *db;
   xmlTextReaderPtr reader;
@@ -183,10 +184,8 @@ int main(int argc, char **argv) {
   // sqlite3_threadsafe(), sqlite3_config(SQLITE_CONFIG_SERIALIZED));
 
   /* Set up a sqlite3 connection to the target file / database */
-  rc = sqlite3_open_v2(
-      sqlite3_target, &db,
-      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, NULL);
-  if (rc != SQLITE_OK) {
+  int flgs = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX;
+  if (sqlite3_open_v2(sqlite3_target, &db, flgs, NULL) != SQLITE_OK) {
     fprintf(stderr, "Failed to open database: %s\n", sqlite3_errmsg(db));
     sqlite3_close(db);
     cleanup();
@@ -195,14 +194,12 @@ int main(int argc, char **argv) {
 
   progress = progressbar_new("Processing", 0);
 
-  if (stream(reader, db, threads, progress) != 0) {
-    fprintf(stderr, "Conversion Failed");
-  }
+  rc = stream(reader, db, threads, progress);
 
   progressbar_finish(progress);
   xmlFreeTextReader(reader);
 
   sqlite3_close(db);
   cleanup();
-  exit(0);
+  exit(rc);
 }
