@@ -446,6 +446,7 @@ int stream(xmlTextReaderPtr reader, sqlite3 *conn, int threads,
 
 end:
   sqlite3_exec(db, "END TRANSACTION", NULL, NULL, &err_msg);
+  sqlite3_free(err_msg);
   threadpool_destroy(pool, 0);
   pthread_mutex_destroy(&lock);
   cleanup();
