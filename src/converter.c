@@ -47,27 +47,29 @@
 #include "statusbar.h"
 #include "threadpool.h"
 
+#define CONVERTER_OK 0x00    /* Successful result */
+#define CONVERTER_ERROR 0x01 /* Generic error */
+
 threadpool_t *pool;
 pthread_mutex_t lock;
-int fetched, done;
+int fetched = 0, successes = 0, failures = 0;
 
 enum FPDS { COUNT, AWARD, IDV, OTAWARD, OTIDV };
 
-static char *xml_archive, *sqlite3_target;
 static sqlite3 *db;
 static progressbar *bar;
 static xsltStylesheetPtr create_table, insert_row, normalize_record;
 static void setup(void);
 static void cleanup(void);
 static xmlXPathObjectPtr getXPath(xmlDocPtr doc, xmlChar *xpath);
-static void buildTable(xmlDocPtr parsedTableXML);
-static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid);
+static int buildTable(xmlDocPtr parsedTableXML);
+static int insertRecord(xmlDocPtr parsed_table_xml, char *uuid);
 static xmlDocPtr normalizeXML(xmlChar *doc);
-static void streamFile(const char *filename);
-static void writeSQL(xmlDocPtr norm_xml);
+static int writeSQL(xmlDocPtr norm_xml);
 static int getType(xmlChar *name);
 static int getCount(xmlTextReaderPtr reader);
 static void task(void *arg);
+static int createViews(void);
 
 static void setup(void) {
   xmlDocPtr create_table_xsl_doc, insert_row_xsl_doc, normalize_record_xsl_doc;
@@ -118,42 +120,54 @@ static xmlXPathObjectPtr getXPath(xmlDocPtr doc, xmlChar *xpath) {
  * Create a table (if not exists) in the database
  * @parsed_table_xml: xml for the table
  */
-static void buildTable(xmlDocPtr parsed_table_xml) {
+static int buildTable(xmlDocPtr parsed_table_xml) {
   char *err_msg;
-  int buffersize, rc;
+  int buffersize;
   xmlDocPtr result;
   xmlChar *sql_text;
 
   /* Use the `create_table' xsl stylesheet to generate an SQL statement */
   result = xsltApplyStylesheet(create_table, parsed_table_xml, NULL);
-  xsltSaveResultToString(&sql_text, &buffersize, result, create_table);
-  xmlFreeDoc(result);
+  if (xsltSaveResultToString(&sql_text, &buffersize, result, create_table) ==
+      -1) {
+    xmlFreeDoc(result);
+    return CONVERTER_ERROR;
+  }
 
   /* Execute the statement */
-  rc = sqlite3_exec(db, (char *)sql_text, 0, 0, &err_msg);
-  if (rc != SQLITE_OK)
+  if (sqlite3_exec(db, (char *)sql_text, 0, 0, &err_msg) != SQLITE_OK) {
     printf("ERROR creating table: %s\n", sqlite3_errmsg(db));
+    sqlite3_free(err_msg);
+    xmlFreeDoc(result);
+    return CONVERTER_ERROR;
+  }
 
   sqlite3_free(err_msg);
+  xmlFreeDoc(result);
   xmlFree(sql_text);
+  return CONVERTER_OK;
 }
 
 /*
  * Create views in the database
  */
-static void createViews() {
+static int createViews(void) {
   char *err_msg;
-  int rc;
 
-  rc = sqlite3_exec(db, (char *)create_view_document_id_sql, 0, 0, &err_msg);
-  if (rc != SQLITE_OK)
+  if (sqlite3_exec(db, (char *)create_view_document_id_sql, 0, 0, &err_msg) !=
+      SQLITE_OK) {
     printf("ERROR creating document view: %s\n", sqlite3_errmsg(db));
+    return CONVERTER_ERROR;
+  }
 
-  rc = sqlite3_exec(db, (char *)create_view_fact_sql, 0, 0, &err_msg);
-  if (rc != SQLITE_OK)
+  if (sqlite3_exec(db, (char *)create_view_fact_sql, 0, 0, &err_msg) !=
+      SQLITE_OK) {
     printf("ERROR creating fact view: %s\n", sqlite3_errmsg(db));
+    return CONVERTER_ERROR;
+  }
 
   sqlite3_free(err_msg);
+  return CONVERTER_OK;
 }
 
 /*
@@ -161,7 +175,7 @@ static void createViews() {
  * @parsed_table_xml: xml for the table
  * @uuid: id field for database
  */
-static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
+static int insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
   int buffersize, i, rowdata;
   sqlite3_stmt *stmt;
   xmlChar *sql_text;
@@ -171,7 +185,11 @@ static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
 
   /* Store a prepared statement for inserting the record */
   result = xsltApplyStylesheet(insert_row, parsed_table_xml, NULL);
-  xsltSaveResultToString(&sql_text, &buffersize, result, insert_row);
+  if (xsltSaveResultToString(&sql_text, &buffersize, result, insert_row) ==
+      -1) {
+    xmlFreeDoc(result);
+    return CONVERTER_ERROR;
+  }
   xmlFreeDoc(result);
 
   /* Use XPath to find the columns (fields) */
@@ -195,37 +213,52 @@ static void insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
       rowdata = 1;
 
       // Issue prepared stmt as some non-null data exists for the row
-      sqlite3_prepare_v2(db, (char *)sql_text, -1, &stmt, NULL);
+      if (sqlite3_prepare_v3(db, (char *)sql_text, -1, 0x00, &stmt, NULL) !=
+          SQLITE_OK) {
+        return CONVERTER_ERROR;
+      }
 
       // First column `id' is the uuid
-      sqlite3_bind_text(stmt, 1, uuid, -1, SQLITE_TRANSIENT);
+      if (sqlite3_bind_text(stmt, 1, uuid, -1, SQLITE_TRANSIENT) != SQLITE_OK) {
+        return CONVERTER_ERROR;
+      }
 
       // Go back and bind previously skipped columns of nulls
-      for (j = 0; j < i; j++)
-        sqlite3_bind_null(stmt, j + 2);
+      for (j = 0; j < i; j++) {
+        if (sqlite3_bind_null(stmt, j + 2) != SQLITE_OK) {
+          return CONVERTER_ERROR;
+        }
+      }
     }
 
     /// If rowData flag, bind data to prepared stmt as appropriate
-    if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) == 0)
-      sqlite3_bind_null(stmt, i + 2);
-    else if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) != 0)
-      sqlite3_bind_text(stmt, i + 2, (char *)value, -1, SQLITE_TRANSIENT);
+    if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) == 0) {
+      if (sqlite3_bind_null(stmt, i + 2) != SQLITE_OK) {
+        return CONVERTER_ERROR;
+      }
+    } else if (rowdata == 1 && xmlStrncmp(value, (xmlChar *)"", 1) != 0) {
+      if (sqlite3_bind_text(stmt, i + 2, (char *)value, -1, SQLITE_TRANSIENT) !=
+          SQLITE_OK) {
+        return CONVERTER_ERROR;
+      }
+    }
 
     free(value);
   }
 
   if (rowdata == 1) {
-    int rc;
 
-    rc = sqlite3_step(stmt);
-    if (rc != SQLITE_DONE)
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
       fprintf(stderr, "ERROR inserting data: %s\n", sqlite3_errmsg(db));
+      return CONVERTER_ERROR;
+    }
 
     sqlite3_finalize(stmt);
   }
 
   xmlXPathFreeObject(columns);
   xmlFree(sql_text);
+  return CONVERTER_OK;
 }
 
 /*
@@ -246,7 +279,7 @@ static xmlDocPtr normalizeXML(xmlChar *doc) {
  * Write xml record to database
  * @norm_xml: a normalized xml document
  */
-static void writeSQL(xmlDocPtr norm_xml) {
+static int writeSQL(xmlDocPtr norm_xml) {
   int i;
   xmlNodeSetPtr table_nodeset;
   xmlXPathObjectPtr tables;
@@ -270,7 +303,12 @@ static void writeSQL(xmlDocPtr norm_xml) {
      * ? Better way to get from xmlNodePtr --> xmlDocPtr ?
      */
     buffer = xmlBufferCreate();
-    xmlNodeDump(buffer, norm_xml, table_nodeset->nodeTab[i], 2, 1);
+    if (xmlNodeDump(buffer, norm_xml, table_nodeset->nodeTab[i], 2, 1) == -1) {
+      xmlFree(buffer);
+      free(uuid);
+      xmlXPathFreeObject(tables);
+      return CONVERTER_ERROR;
+    }
     raw_table_xml = buffer->content;
     xmlFree(buffer);
 
@@ -278,18 +316,27 @@ static void writeSQL(xmlDocPtr norm_xml) {
     xmlFree(raw_table_xml);
 
     /* Create the table in the database */
-    if (done < 1) {
-      buildTable(parsed_table_xml);
+    if (successes < 1) {
+      if (buildTable(parsed_table_xml) != CONVERTER_OK) {
+        free(uuid);
+        xmlXPathFreeObject(tables);
+        return CONVERTER_ERROR;
+      }
     }
 
     /* Insert the record into the database */
-    insertRecord(parsed_table_xml, uuid);
+    if (insertRecord(parsed_table_xml, uuid) != CONVERTER_OK) {
+      free(uuid);
+      xmlXPathFreeObject(tables);
+      return CONVERTER_ERROR;
+    }
 
     xmlFreeDoc(parsed_table_xml);
   }
 
   free(uuid);
   xmlXPathFreeObject(tables);
+  return CONVERTER_OK;
 }
 
 /*
@@ -358,16 +405,22 @@ static int getCount(xmlTextReaderPtr reader) {
 void task(void *arg) {
   xmlChar *doc = (xmlChar *)arg;
   xmlDocPtr norm;
+  int rc;
 
   norm = normalizeXML(doc);
-  writeSQL(norm);
+  rc = writeSQL(norm);
   xmlFreeDoc(norm);
   xmlFree(doc);
 
   pthread_mutex_lock(&lock);
-  done++;
-  if (bar != NULL && done % 512 == 0) {
-    progressbar_update(bar, done);
+  if (rc == CONVERTER_OK) {
+    successes++;
+  } else {
+    failures++;
+    fprintf(stderr, "oh shit\n");
+  }
+  if (bar != NULL && (successes + failures) % 512 == 0) {
+    progressbar_update(bar, (successes + failures));
   }
   pthread_mutex_unlock(&lock);
 }
@@ -379,19 +432,16 @@ void task(void *arg) {
 int stream(xmlTextReaderPtr reader, sqlite3 *conn, int threads,
            progressbar *progress) {
   char *err_msg = 0;
-  int queue = threads * 12;
-  int rc = 0;
-  int ret = 1;
-  int tasks = 0;
+  int queue = threads * 12, rc, tasks = 0;
 
   db = conn;
   bar = progress;
 
   /* Obtain exclusive transaction with sqlite3 */
-  rc = sqlite3_exec(db, "BEGIN EXCLUSIVE TRANSACTION", NULL, NULL, &err_msg);
-  if (rc != SQLITE_OK) {
+  if (sqlite3_exec(db, "BEGIN EXCLUSIVE TRANSACTION", NULL, NULL, &err_msg) !=
+      SQLITE_OK) {
     fprintf(stderr, "Failed to begin transaction.");
-    return ret;
+    return CONVERTER_ERROR;
   }
 
   setup();
@@ -399,9 +449,26 @@ int stream(xmlTextReaderPtr reader, sqlite3 *conn, int threads,
   pthread_mutex_init(&lock, NULL);
   pool = threadpool_create(threads, queue, 0);
 
-  while (xmlTextReaderRead(reader)) {
+  while (1) {
 
-    if (xmlTextReaderNodeType(reader) != 1) {
+    switch (xmlTextReaderRead(reader)) {
+    case 1:
+      break;
+    case 0:
+      goto wait;
+    case -1:
+    default:
+      rc = CONVERTER_ERROR;
+      goto end;
+    }
+
+    switch (xmlTextReaderNodeType(reader)) {
+    case 1:
+      break;
+    case -1:
+      rc = CONVERTER_ERROR;
+      goto end;
+    default:
       continue;
     }
 
@@ -420,13 +487,14 @@ int stream(xmlTextReaderPtr reader, sqlite3 *conn, int threads,
     case IDV:
     case OTAWARD:
     case OTIDV:
-      while ((tasks - done) >= queue) {
+      while ((tasks - (successes + failures)) >= queue) {
         usleep(10);
       }
 
       if (threadpool_add(pool, &task, xmlTextReaderReadOuterXml(reader), 0) !=
           0) {
         fprintf(stderr, "ERROR: record transformation failed.\n");
+        rc = CONVERTER_ERROR;
         goto end;
       };
 
@@ -437,18 +505,21 @@ int stream(xmlTextReaderPtr reader, sqlite3 *conn, int threads,
     xmlFree(name);
   }
 
-  while (done < tasks) {
+wait:
+  while ((successes + failures) < tasks) {
     usleep(10);
   }
 
   createViews();
-  ret = 0;
+  rc = failures > 0 ? CONVERTER_ERROR : CONVERTER_OK;
 
 end:
-  sqlite3_exec(db, "END TRANSACTION", NULL, NULL, &err_msg);
+  if (sqlite3_exec(db, "END TRANSACTION", NULL, NULL, &err_msg) != SQLITE_OK) {
+    rc = CONVERTER_ERROR;
+  }
   sqlite3_free(err_msg);
   threadpool_destroy(pool, 0);
   pthread_mutex_destroy(&lock);
   cleanup();
-  return ret;
+  return rc;
 }
