@@ -213,7 +213,7 @@ static int insertRecord(xmlDocPtr parsed_table_xml, char *uuid) {
       rowdata = 1;
 
       // Issue prepared stmt as some non-null data exists for the row
-      if (sqlite3_prepare_v3(db, (char *)sql_text, -1, 0x00, &stmt, NULL) !=
+      if (sqlite3_prepare_v2(db, (char *)sql_text, -1, &stmt, NULL) !=
           SQLITE_OK) {
         return CONVERTER_ERROR;
       }
