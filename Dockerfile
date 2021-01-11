@@ -1,19 +1,24 @@
-FROM debian:buster-slim
+FROM debian:buster-slim as builder
 
 RUN apt-get update && apt-get -y install --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
     liblzma-dev \
     libncurses-dev \
     libsqlite3-dev \
-    libssl-dev \
     libxml2 \
     libxslt1-dev \
-    tar \
     uuid-dev \
-    xxd \
-    zlib1g-dev
+    zlib1g
+
+
+FROM builder
+
+RUN apt-get -y install --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    libssl-dev \
+    tar \
+    xxd
 
 # build cmake from source
 ENV CMAKE_VERSION=3.14.7
@@ -29,17 +34,8 @@ RUN cmake -S /opt/fpds-conversion-utility -B /opt/fpds-conversion-utility/build
 RUN cmake --build /opt/fpds-conversion-utility/build
 
 
-FROM debian:buster-slim
+FROM builder
 
-RUN apt-get update && apt-get -y install --no-install-recommends \
-    liblzma-dev \
-    libncurses-dev \
-    libsqlite3-dev \
-    libxml2 \
-    libxslt1-dev \
-    uuid-dev \
-    zlib1g
-
-COPY --from=0 /opt/fpds-conversion-utility/build/app/conversion-utility /usr/local/bin/conversion-utility
+COPY --from=1 /opt/fpds-conversion-utility/build/app/conversion-utility /usr/local/bin/conversion-utility
 
 ENTRYPOINT ["/usr/local/bin/conversion-utility"]
