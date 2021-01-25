@@ -1,4 +1,4 @@
-FROM debian:buster-slim as builder
+FROM debian:buster-slim AS builder
 
 RUN apt-get update && apt-get -y install --no-install-recommends \
     liblzma-dev \
@@ -12,26 +12,29 @@ RUN apt-get update && apt-get -y install --no-install-recommends \
 
 FROM builder
 
+# build cmake from source
+ENV CMAKE_VERSION=3.14.7
+WORKDIR /opt/cmake
 RUN apt-get -y install --no-install-recommends \
     build-essential \
     ca-certificates \
     curl \
     libssl-dev \
-    tar \
-    xxd
-
-# build cmake from source
-ENV CMAKE_VERSION=3.14.7
-WORKDIR /opt/cmake
-RUN curl -Ls https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz | tar xz
-RUN cd cmake-${CMAKE_VERSION} && ./bootstrap && make -j$(nproc) install clean
+    tar
+RUN curl -fSLs https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
+    | tar xz \
+    && cd cmake-${CMAKE_VERSION} \
+    && ./bootstrap \
+    && make -j$(nproc) install clean
 
 # build conversion utility
 ENV FPDS_STATIC=0
 WORKDIR /opt/fpds-conversion-utility
 COPY . .
-RUN cmake -S /opt/fpds-conversion-utility -B /opt/fpds-conversion-utility/build
-RUN cmake --build /opt/fpds-conversion-utility/build
+RUN apt-get -y install --no-install-recommends \
+    xxd
+RUN cmake -S /opt/fpds-conversion-utility -B /opt/fpds-conversion-utility/build \
+    && cmake --build /opt/fpds-conversion-utility/build
 
 
 FROM builder
