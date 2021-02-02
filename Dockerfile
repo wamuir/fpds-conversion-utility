@@ -18,13 +18,15 @@ WORKDIR /opt/cmake
 RUN apt-get -y install --no-install-recommends \
     build-essential \
     ca-certificates \
+    cmake \
     curl \
     libssl-dev \
     tar
-RUN curl -fSLs https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
+RUN c_rehash \
+    && curl -fSLs https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
     | tar xz \
     && cd cmake-${CMAKE_VERSION} \
-    && ./bootstrap \
+    && cmake . \
     && make -j$(nproc) install clean
 
 # build conversion utility
