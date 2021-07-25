@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, fix-gh-actions ]
   pull_request:
     branches: [ master ]
 
@@ -17,8 +17,9 @@ jobs:
 
     - name: Install dependencies
       run: sudo apt-get update && sudo apt-get -y install --no-install-recommends build-essential cmake liblzma-dev libncurses-dev libsqlite3-dev libxml2 libxslt1-dev uuid-dev xxd zlib1g-dev
+    
+    - name: List files
+      run: ls -l
 
     - name: Build
-      run: mkdir build \
-           && cmake -B build \
-           && cmake --build build
+      run: mkdir build && cmake -B build && cmake --build build
