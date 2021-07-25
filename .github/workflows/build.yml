@@ -1,0 +1,22 @@
+name: build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get -y install --no-install-recommends build-essential cmake liblzma-dev libncurses-dev libsqlite3-dev libxml2 libxslt1-dev uuid-dev xxd zlib1g-dev
+
+    - name: Build
+      run: mkdir build && cmake -B build && cmake --build build
